@@ -451,6 +451,73 @@
       background: rgba(255, 107, 107, 0.12);
     }
 
+    .settings-field {
+      margin-bottom: 0.9rem;
+      text-align: right;
+    }
+
+    .settings-field label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--white);
+    }
+
+    .settings-field input[type="password"],
+    .settings-field input[type="text"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.35);
+      background: rgba(0, 8, 20, 0.55);
+      color: var(--white);
+      font-family: ui-monospace, monospace;
+      font-size: 0.88rem;
+    }
+
+    .settings-field input:focus {
+      outline: none;
+      border-color: var(--bus-yellow);
+      box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.15);
+    }
+
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+    }
+
+    .btn-settings--secondary {
+      border-color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .btn-settings--secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .settings-feedback {
+      margin-top: 0.85rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      min-height: 1.4em;
+    }
+
+    .settings-feedback.ok {
+      color: #7bed9f;
+    }
+
+    .settings-feedback.err {
+      color: #ff6b6b;
+    }
+
+    .settings-feedback.muted {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
     .tab-panels {
       width: 100%;
       max-width: 720px;
@@ -651,6 +718,23 @@
       <div class="tab-panel" id="panel-settings" role="region" aria-labelledby="tab-settings">
         <h2>الإعدادات</h2>
         <p>تفضيلات التطبيق والحساب.</p>
+        <section class="settings-block" aria-labelledby="openai-api-heading">
+          <h3 id="openai-api-heading">ChatGPT / OpenAI API</h3>
+          <div class="settings-field">
+            <label for="openaiApiKeyInput">مفتاح API (Secret Key)</label>
+            <input type="password" id="openaiApiKeyInput" name="openai_api_key" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="sk-..." dir="ltr" />
+          </div>
+          <div class="settings-field">
+            <label for="openaiTokenInput">رمز API (Token)</label>
+            <input type="password" id="openaiTokenInput" name="openai_token" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="إن وُجد رمز أو مفتاح مشروع منفصل" dir="ltr" />
+          </div>
+          <p class="hint">يُحفظ محلياً في هذا المتصفح فقط. لا تُعرض المفاتيح على شاشة عامة.</p>
+          <div class="settings-actions">
+            <button type="button" class="btn-settings" id="btnSaveOpenaiSettings">حفظ المفاتيح</button>
+            <button type="button" class="btn-settings btn-settings--secondary" id="btnVerifyOpenai">التحقق من الاتصال</button>
+          </div>
+          <p class="settings-feedback muted" id="apiSettingsFeedback" role="status"></p>
+        </section>
         <section class="settings-block" aria-labelledby="upload-logo-heading">
           <h3 id="upload-logo-heading">رفع الشعار</h3>
           <button type="button" class="btn-settings" id="btnToggleLogoUpload" aria-expanded="false" aria-controls="logoUploadZone">رفع الشعار</button>
@@ -683,6 +767,9 @@
     var REMEMBER_KEY = "90plus_remember";
     var LOGO_STORAGE_KEY = "90plus_custom_logo_png";
     var LOGO_MAX_BYTES = 2 * 1024 * 1024;
+    var OPENAI_KEY_STORAGE = "90plus_openai_api_key";
+    var OPENAI_TOKEN_STORAGE = "90plus_openai_api_token";
+    var OPENAI_VERIFIED_AT_KEY = "90plus_openai_verified_at";
 
     (function initCustomLogo() {
       function allLogoImgs() {
@@ -785,6 +872,126 @@
       }
 
       loadFromStorage();
+    })();
+
+    (function initOpenAISettings() {
+      var feedback = document.getElementById("apiSettingsFeedback");
+      var keyInput = document.getElementById("openaiApiKeyInput");
+      var tokenInput = document.getElementById("openaiTokenInput");
+      var btnSave = document.getElementById("btnSaveOpenaiSettings");
+      var btnVerify = document.getElementById("btnVerifyOpenai");
+
+      function setFeedback(kind, message) {
+        if (!feedback) return;
+        feedback.textContent = message || "";
+        feedback.className =
+          "settings-feedback " + (kind === "ok" ? "ok" : kind === "err" ? "err" : "muted");
+      }
+
+      function getSecretFromFields() {
+        var k = keyInput ? keyInput.value.trim() : "";
+        var t = tokenInput ? tokenInput.value.trim() : "";
+        return k || t;
+      }
+
+      function persistFromFields() {
+        var k = keyInput ? keyInput.value.trim() : "";
+        var t = tokenInput ? tokenInput.value.trim() : "";
+        if (!k && !t) {
+          try {
+            localStorage.removeItem(OPENAI_KEY_STORAGE);
+            localStorage.removeItem(OPENAI_TOKEN_STORAGE);
+          } catch (e) {}
+          return;
+        }
+        try {
+          if (k) localStorage.setItem(OPENAI_KEY_STORAGE, k);
+          else localStorage.removeItem(OPENAI_KEY_STORAGE);
+          if (t) localStorage.setItem(OPENAI_TOKEN_STORAGE, t);
+          else localStorage.removeItem(OPENAI_TOKEN_STORAGE);
+        } catch (e) {
+          throw e;
+        }
+      }
+
+      function loadIntoFields() {
+        if (!keyInput || !tokenInput) return;
+        try {
+          var k = localStorage.getItem(OPENAI_KEY_STORAGE);
+          var t = localStorage.getItem(OPENAI_TOKEN_STORAGE);
+          if (k) keyInput.value = k;
+          if (t) tokenInput.value = t;
+          var verified = localStorage.getItem(OPENAI_VERIFIED_AT_KEY);
+          if (verified) {
+            var short = verified.replace("T", " ").slice(0, 19);
+            setFeedback("muted", "آخر تحقق ناجح مسجل: " + short);
+          }
+        } catch (e) {}
+      }
+
+      if (btnSave) {
+        btnSave.addEventListener("click", function () {
+          try {
+            persistFromFields();
+            setFeedback("ok", "تم حفظ المفاتيح في المتصفح بنجاح.");
+          } catch (e) {
+            setFeedback("err", "تعذر الحفظ — تحقق من مساحة التخزين أو أذونات المتصفح.");
+          }
+        });
+      }
+
+      if (btnVerify) {
+        btnVerify.addEventListener("click", function () {
+          var secret = getSecretFromFields();
+          if (!secret) {
+            setFeedback("err", "أدخل مفتاح API أو رمز Token في أحد الحقلين ثم حاول مرة أخرى.");
+            return;
+          }
+          setFeedback("muted", "جاري التحقق مع api.openai.com …");
+          btnVerify.disabled = true;
+          fetch("https://api.openai.com/v1/models", {
+            method: "GET",
+            headers: {
+              Authorization: "Bearer " + secret,
+              "Content-Type": "application/json"
+            }
+          })
+            .then(function (res) {
+              if (res.ok) {
+                try {
+                  persistFromFields();
+                  localStorage.setItem(OPENAI_VERIFIED_AT_KEY, new Date().toISOString());
+                } catch (e) {}
+                setFeedback(
+                  "ok",
+                  "تم التحقق: المفتاح يعمل — تم الاتصال بـ OpenAI واستلام قائمة النماذج. وتم حفظ المفاتيح محلياً."
+                );
+                return;
+              }
+              if (res.status === 401) {
+                setFeedback("err", "رفض الخادم المفتاح (401 غير مصرّح). تحقق من صحة المفتاح أو أنه لم ينتهِ.");
+                return null;
+              }
+              return res.text().then(function () {
+                setFeedback("err", "استجابة غير متوقعة من الخادم (رمز " + res.status + ").");
+              });
+            })
+            .catch(function () {
+              setFeedback(
+                "err",
+                "تعذر إكمال التحقق من المتصفح (سياسة CORS أو الشبكة أو ملف محلي file://). المفتاح قد يكون صحيحاً — احفظه واستخدمه من خادم أو امتداد يسمح بالطلب. للتجربة: شغّل الصفحة من خادم محلي http://localhost"
+              );
+              try {
+                persistFromFields();
+              } catch (e) {}
+            })
+            .finally(function () {
+              btnVerify.disabled = false;
+            });
+        });
+      }
+
+      loadIntoFields();
     })();
 
     function showApp() {
