@@ -672,7 +672,7 @@
 
     .tab-panels {
       width: 100%;
-      max-width: 720px;
+      max-width: min(100%, 960px);
       margin: 0 auto;
       flex: 1 1 auto;
     }
@@ -705,8 +705,133 @@
       margin-top: 0.5rem;
     }
 
-    .wizard-progress {
+    /* بطاقة تعرض الخطوات العشر كاملة بدون تمرير أفقي/عمودي داخلها */
+    .wizard-steps-shell {
+      padding: 1rem 1rem 1.1rem;
       margin-bottom: 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 195, 0, 0.22);
+      background: linear-gradient(
+        165deg,
+        rgba(0, 29, 61, 0.55) 0%,
+        rgba(0, 8, 20, 0.35) 100%
+      );
+      box-shadow: inset 0 1px 0 rgba(255, 195, 0, 0.06);
+    }
+
+    .wizard-steps-heading {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 0.85rem;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .wizard-strip-wrap {
+      overflow: visible;
+      margin: 0;
+      padding: 0;
+    }
+
+    .wizard-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.5rem 0.45rem;
+      width: 100%;
+    }
+
+    .wizard-strip-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.4rem;
+      min-height: 0;
+      padding: 0.5rem 0.35rem 0.55rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 195, 0, 0.22);
+      background: rgba(0, 8, 20, 0.45);
+      text-align: center;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    }
+
+    .wizard-strip-num {
+      flex-shrink: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: rgba(255, 195, 0, 0.12);
+      color: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 195, 0, 0.25);
+    }
+
+    .wizard-strip-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1.38;
+      color: rgba(255, 255, 255, 0.58);
+      word-break: break-word;
+      hyphens: manual;
+      width: 100%;
+    }
+
+    .wizard-strip-step.is-done {
+      border-color: rgba(123, 237, 159, 0.4);
+      background: rgba(46, 213, 115, 0.06);
+    }
+
+    .wizard-strip-step.is-done .wizard-strip-num {
+      background: rgba(123, 237, 159, 0.2);
+      border-color: rgba(123, 237, 159, 0.45);
+      color: #b8f0c8;
+    }
+
+    .wizard-strip-step.is-done .wizard-strip-label {
+      color: #a8e6c8;
+    }
+
+    .wizard-strip-step.is-current {
+      border-color: var(--bus-yellow);
+      background: rgba(255, 195, 0, 0.12);
+      box-shadow: 0 0 20px rgba(255, 195, 0, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .wizard-strip-step.is-current .wizard-strip-num {
+      background: var(--bus-yellow);
+      border-color: var(--bus-yellow);
+      color: var(--ink-black);
+    }
+
+    .wizard-strip-step.is-current .wizard-strip-label {
+      color: var(--bus-yellow);
+    }
+
+    @media (max-width: 720px) {
+      .wizard-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+
+      .wizard-strip-label {
+        font-size: 0.72rem;
+      }
+    }
+
+    @media (min-width: 721px) and (max-width: 900px) {
+      .wizard-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .wizard-progress {
+      margin-bottom: 1.1rem;
     }
 
     .wizard-progress-text {
@@ -714,13 +839,13 @@
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--bus-yellow);
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.45rem;
     }
 
     .wizard-progress-bar {
-      height: 6px;
+      height: 8px;
       border-radius: 999px;
-      background: rgba(255, 195, 0, 0.15);
+      background: rgba(255, 195, 0, 0.12);
       overflow: hidden;
     }
 
@@ -730,46 +855,6 @@
       border-radius: 999px;
       background: linear-gradient(90deg, var(--bus-yellow), var(--gold));
       transition: width 0.35s ease;
-    }
-
-    .wizard-strip-wrap {
-      overflow-x: auto;
-      margin-bottom: 1rem;
-      padding-bottom: 0.25rem;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .wizard-strip {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 0.45rem;
-      min-width: min-content;
-    }
-
-    .wizard-strip-step {
-      flex: 0 0 auto;
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 0.35rem 0.55rem;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 195, 0, 0.25);
-      background: rgba(0, 8, 20, 0.5);
-      color: rgba(255, 255, 255, 0.55);
-      white-space: nowrap;
-      max-width: 140px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .wizard-strip-step.is-done {
-      border-color: rgba(123, 237, 159, 0.45);
-      color: #a8e6b8;
-    }
-
-    .wizard-strip-step.is-current {
-      border-color: var(--bus-yellow);
-      background: rgba(255, 195, 0, 0.15);
-      color: var(--bus-yellow);
     }
 
     .wizard-pane {
@@ -1101,15 +1186,18 @@
         <p>أكمل الخطوات بالترتيب. لا يمكن الانتقال للخطوة التالية قبل استيفاء متطلبات الخطوة الحالية.</p>
 
         <div id="createWizard" class="create-wizard">
+          <div class="wizard-steps-shell">
+            <p class="wizard-steps-heading">خريطة المسار — 10 خطوات</p>
+            <div class="wizard-strip-wrap">
+              <div class="wizard-strip" id="wizardStrip" role="list" aria-label="خطوات إنشاء المنشور"></div>
+            </div>
+          </div>
+
           <div class="wizard-progress">
             <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">10</span> — <span id="wizardStepTitle">إدراج الرابط</span></span>
             <div class="wizard-progress-bar">
               <div class="wizard-progress-fill" id="wizardProgressFill"></div>
             </div>
-          </div>
-
-          <div class="wizard-strip-wrap">
-            <div class="wizard-strip" id="wizardStrip" aria-hidden="true"></div>
           </div>
 
           <div class="wizard-panes">
@@ -1998,7 +2086,15 @@
       STEP_LABELS.forEach(function (label, idx) {
         var sp = document.createElement("span");
         sp.className = "wizard-strip-step";
-        sp.textContent = idx + 1 + ". " + label;
+        sp.setAttribute("role", "listitem");
+        var num = document.createElement("span");
+        num.className = "wizard-strip-num";
+        num.textContent = String(idx + 1);
+        var lab = document.createElement("span");
+        lab.className = "wizard-strip-label";
+        lab.textContent = label;
+        sp.appendChild(num);
+        sp.appendChild(lab);
         strip.appendChild(sp);
       });
 
