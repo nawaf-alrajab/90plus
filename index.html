@@ -613,6 +613,63 @@
       background: rgba(255, 107, 107, 0.12);
     }
 
+    /* إظهار/إخفاء كلمة المرور (إضافة مستخدم) */
+    .password-input-wrap {
+      position: relative;
+      display: block;
+    }
+
+    .password-input-wrap input[type="password"],
+    .password-input-wrap input[type="text"] {
+      padding-inline-end: 3rem;
+    }
+
+    .toggle-password-btn {
+      position: absolute;
+      inset-inline-end: 0.35rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.35rem;
+      height: 2.35rem;
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 195, 0, 0.12);
+      color: var(--bus-yellow);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .toggle-password-btn:hover {
+      background: rgba(255, 195, 0, 0.22);
+      color: var(--gold);
+    }
+
+    .toggle-password-btn:focus-visible {
+      outline: 2px solid var(--bus-yellow);
+      outline-offset: 2px;
+    }
+
+    .toggle-password-btn svg {
+      display: block;
+      pointer-events: none;
+    }
+
+    .toggle-password-btn .pw-icon-hide {
+      display: none;
+    }
+
+    .toggle-password-btn.is-visible .pw-icon-show {
+      display: none;
+    }
+
+    .toggle-password-btn.is-visible .pw-icon-hide {
+      display: block;
+    }
+
     .tab-panels {
       width: 100%;
       max-width: 720px;
@@ -641,6 +698,247 @@
       font-weight: 700;
       color: var(--bus-yellow);
       margin-bottom: 0.75rem;
+    }
+
+    /* ===== معالج إنشاء منشور (خطوات متتابعة) ===== */
+    .create-wizard {
+      margin-top: 0.5rem;
+    }
+
+    .wizard-progress {
+      margin-bottom: 1rem;
+    }
+
+    .wizard-progress-text {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--bus-yellow);
+      margin-bottom: 0.4rem;
+    }
+
+    .wizard-progress-bar {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 195, 0, 0.15);
+      overflow: hidden;
+    }
+
+    .wizard-progress-fill {
+      height: 100%;
+      width: 10%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--bus-yellow), var(--gold));
+      transition: width 0.35s ease;
+    }
+
+    .wizard-strip-wrap {
+      overflow-x: auto;
+      margin-bottom: 1rem;
+      padding-bottom: 0.25rem;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .wizard-strip {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.45rem;
+      min-width: min-content;
+    }
+
+    .wizard-strip-step {
+      flex: 0 0 auto;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.35rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.25);
+      background: rgba(0, 8, 20, 0.5);
+      color: rgba(255, 255, 255, 0.55);
+      white-space: nowrap;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .wizard-strip-step.is-done {
+      border-color: rgba(123, 237, 159, 0.45);
+      color: #a8e6b8;
+    }
+
+    .wizard-strip-step.is-current {
+      border-color: var(--bus-yellow);
+      background: rgba(255, 195, 0, 0.15);
+      color: var(--bus-yellow);
+    }
+
+    .wizard-pane {
+      display: none;
+      padding: 0.75rem 0;
+      animation: wizFade 0.25s ease;
+    }
+
+    .wizard-pane.is-active {
+      display: block;
+    }
+
+    @keyframes wizFade {
+      from { opacity: 0.45; }
+      to { opacity: 1; }
+    }
+
+    .wizard-pane h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--bus-yellow);
+      margin-bottom: 0.75rem;
+    }
+
+    .wiz-field {
+      margin-bottom: 1rem;
+      text-align: right;
+    }
+
+    .wiz-field label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--white);
+    }
+
+    .wiz-field input[type="url"],
+    .wiz-field input[type="file"],
+    .wiz-field textarea,
+    .wiz-field select {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.35);
+      background: rgba(0, 8, 20, 0.55);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.92rem;
+    }
+
+    .wiz-field textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .wiz-field textarea[readonly] {
+      opacity: 0.92;
+      border-style: dashed;
+    }
+
+    .wiz-field input:focus,
+    .wiz-field textarea:focus,
+    .wiz-field select:focus {
+      outline: none;
+      border-color: var(--bus-yellow);
+      box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.15);
+    }
+
+    .wiz-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.92rem;
+      margin-top: 0.5rem;
+    }
+
+    .wiz-check input {
+      margin-top: 0.2rem;
+      accent-color: var(--bus-yellow);
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+
+    .wiz-preview-summary {
+      padding: 0.85rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 195, 0, 0.25);
+      background: rgba(0, 8, 20, 0.45);
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .wizard-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 195, 0, 0.2);
+    }
+
+    .wizard-btn {
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 700;
+      padding: 0.55rem 1.25rem;
+      border-radius: 8px;
+      border: 2px solid var(--bus-yellow);
+      cursor: pointer;
+      transition: background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .wizard-btn--primary {
+      background: var(--bus-yellow);
+      color: var(--ink-black);
+    }
+
+    .wizard-btn--primary:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .wizard-btn--ghost {
+      background: transparent;
+      color: var(--bus-yellow);
+    }
+
+    .wizard-btn--ghost:hover:not(:disabled) {
+      background: rgba(255, 195, 0, 0.12);
+    }
+
+    .wizard-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .wizard-btn--merge {
+      border-color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .wizard-error {
+      color: #ff6b6b;
+      font-size: 0.88rem;
+      margin-top: 0.75rem;
+      min-height: 1.35em;
+    }
+
+    .wizard-success {
+      color: #7bed9f;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      font-weight: 600;
+    }
+
+    .create-wizard .hint {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 0.65rem;
     }
 
     /* ===== Footer ===== */
@@ -800,7 +1098,126 @@
       </div>
       <div class="tab-panel" id="panel-create" role="region" aria-labelledby="tab-create">
         <h2>إنشاء منشور</h2>
-        <p>منطقة إنشاء المنشور — أضف هنا الحقول والمحرر لاحقاً.</p>
+        <p>أكمل الخطوات بالترتيب. لا يمكن الانتقال للخطوة التالية قبل استيفاء متطلبات الخطوة الحالية.</p>
+
+        <div id="createWizard" class="create-wizard">
+          <div class="wizard-progress">
+            <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">10</span> — <span id="wizardStepTitle">إدراج الرابط</span></span>
+            <div class="wizard-progress-bar">
+              <div class="wizard-progress-fill" id="wizardProgressFill"></div>
+            </div>
+          </div>
+
+          <div class="wizard-strip-wrap">
+            <div class="wizard-strip" id="wizardStrip" aria-hidden="true"></div>
+          </div>
+
+          <div class="wizard-panes">
+            <div class="wizard-pane is-active" data-step="0" role="group" aria-labelledby="wizTitle0">
+              <h3 id="wizTitle0">إدراج الرابط</h3>
+              <div class="wiz-field">
+                <label for="wizLink">رابط المصدر</label>
+                <input type="url" id="wizLink" placeholder="https://..." autocomplete="off" dir="ltr" />
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="1" role="group" aria-labelledby="wizTitle1">
+              <h3 id="wizTitle1">ترجمة</h3>
+              <div class="wiz-field">
+                <label for="wizTranslation">نص الترجمة</label>
+                <textarea id="wizTranslation" placeholder="أدخل النص بعد الترجمة أو الصق المحتوى المترجم…"></textarea>
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle2">
+              <h3 id="wizTitle2">عرض المحتوى</h3>
+              <div class="wiz-field">
+                <label for="wizContentView">معاينة المحتوى (للمراجعة)</label>
+                <textarea id="wizContentView" readonly dir="auto"></textarea>
+              </div>
+              <label class="wiz-check">
+                <input type="checkbox" id="wizContentOk" />
+                <span>أكملت مراجعة المحتوى ووافقت عليه</span>
+              </label>
+            </div>
+
+            <div class="wizard-pane" data-step="3" role="group" aria-labelledby="wizTitle3">
+              <h3 id="wizTitle3">إعادة صياغة</h3>
+              <div class="wiz-field">
+                <label for="wizRewrite">النص بعد إعادة الصياغة</label>
+                <textarea id="wizRewrite" placeholder="النص المعاد صياغته بأسلوبك…"></textarea>
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="4" role="group" aria-labelledby="wizTitle4">
+              <h3 id="wizTitle4">اختيار القالب</h3>
+              <div class="wiz-field">
+                <label for="wizTemplate">القالب</label>
+                <select id="wizTemplate">
+                  <option value="">— اختر قالباً —</option>
+                  <option value="match">مباراة</option>
+                  <option value="news">خبر</option>
+                  <option value="quote">اقتباس / تصريح</option>
+                  <option value="stats">إحصائيات</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="5" role="group" aria-labelledby="wizTitle5">
+              <h3 id="wizTitle5">رفع الصورة</h3>
+              <div class="wiz-field">
+                <label for="wizImage">صورة المنشور</label>
+                <input type="file" id="wizImage" accept="image/*" />
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="6" role="group" aria-labelledby="wizTitle6">
+              <h3 id="wizTitle6">استخراج القالب</h3>
+              <div class="wiz-field">
+                <label for="wizExtractTemplate">محتوى مستخرج وفق القالب</label>
+                <textarea id="wizExtractTemplate" placeholder="النص المستخرج أو المعبأ حسب القالب…"></textarea>
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="7" role="group" aria-labelledby="wizTitle7">
+              <h3 id="wizTitle7">تصدير كابشن</h3>
+              <div class="wiz-field">
+                <label for="wizCaption">نص الكابشن</label>
+                <textarea id="wizCaption" placeholder="نص يُنسخ مع المنشور…"></textarea>
+              </div>
+            </div>
+
+            <div class="wizard-pane" data-step="8" role="group" aria-labelledby="wizTitle8">
+              <h3 id="wizTitle8">عرض قبل التصدير</h3>
+              <p class="hint">راجع الملخص أدناه قبل المتابعة.</p>
+              <div class="wiz-preview-summary" id="wizPreviewSummary"></div>
+              <label class="wiz-check">
+                <input type="checkbox" id="wizPreviewOk" />
+                <span>اطلعت على المعاينة وأوافق على المتابعة للتصدير</span>
+              </label>
+            </div>
+
+            <div class="wizard-pane" data-step="9" role="group" aria-labelledby="wizTitle9">
+              <h3 id="wizTitle9">استخراج</h3>
+              <div class="wiz-field">
+                <label for="wizFinalExport">الناتج النهائي</label>
+                <textarea id="wizFinalExport" placeholder="اضغط «توليد الناتج» أو اكتب النص النهائي يدوياً…"></textarea>
+              </div>
+              <div class="wizard-nav" style="border-top: none; margin-top: 0; padding-top: 0;">
+                <button type="button" class="wizard-btn wizard-btn--merge" id="wizBtnMerge">توليد الناتج من الخطوات</button>
+              </div>
+            </div>
+          </div>
+
+          <p class="wizard-error" id="wizardError" role="alert"></p>
+          <p class="wizard-success" id="wizardSuccess" role="status" hidden></p>
+
+          <div class="wizard-nav">
+            <button type="button" class="wizard-btn wizard-btn--ghost" id="wizardPrev">السابق</button>
+            <button type="button" class="wizard-btn wizard-btn--primary" id="wizardNext">التالي</button>
+            <button type="button" class="wizard-btn wizard-btn--primary" id="wizardFinish" hidden>إنهاء المسار</button>
+          </div>
+        </div>
       </div>
       <div class="tab-panel" id="panel-posts" role="region" aria-labelledby="tab-posts">
         <h2>المنشورات</h2>
@@ -861,11 +1278,35 @@
               </div>
               <div class="settings-field">
                 <label for="newUserPassword">كلمة المرور</label>
-                <input type="password" id="newUserPassword" name="password" required autocomplete="new-password" minlength="4" />
+                <div class="password-input-wrap">
+                  <input type="password" id="newUserPassword" name="password" required autocomplete="new-password" minlength="4" />
+                  <button type="button" class="toggle-password-btn" data-password-target="newUserPassword" aria-label="إظهار كلمة المرور" aria-pressed="false" title="إظهار كلمة المرور">
+                    <svg class="pw-icon-show" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg class="pw-icon-hide" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div class="settings-field">
                 <label for="newUserPasswordConfirm">تأكيد كلمة المرور</label>
-                <input type="password" id="newUserPasswordConfirm" name="password_confirm" required autocomplete="new-password" minlength="4" />
+                <div class="password-input-wrap">
+                  <input type="password" id="newUserPasswordConfirm" name="password_confirm" required autocomplete="new-password" minlength="4" />
+                  <button type="button" class="toggle-password-btn" data-password-target="newUserPasswordConfirm" aria-label="إظهار تأكيد كلمة المرور" aria-pressed="false" title="إظهار كلمة المرور">
+                    <svg class="pw-icon-show" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg class="pw-icon-hide" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div class="settings-actions">
                 <button type="submit" class="btn-settings" id="btnAddUserSubmit">إضافة المستخدم</button>
@@ -1281,6 +1722,42 @@
             setUserFeedback("err", "تعذر حفظ المستخدم في المتصفح.");
           }
         });
+
+        form.addEventListener("reset", function () {
+          form.querySelectorAll(".toggle-password-btn").forEach(function (b) {
+            b.classList.remove("is-visible");
+            b.setAttribute("aria-pressed", "false");
+            var t = b.getAttribute("data-password-target");
+            var isC = t === "newUserPasswordConfirm";
+            var lab = isC ? "إظهار تأكيد كلمة المرور" : "إظهار كلمة المرور";
+            b.setAttribute("aria-label", lab);
+            b.setAttribute("title", lab);
+          });
+        });
+
+        form.querySelectorAll(".toggle-password-btn").forEach(function (btn) {
+          var tid = btn.getAttribute("data-password-target");
+          var isConfirm = tid === "newUserPasswordConfirm";
+          var labelShow = isConfirm ? "إظهار تأكيد كلمة المرور" : "إظهار كلمة المرور";
+          var labelHide = isConfirm ? "إخفاء تأكيد كلمة المرور" : "إخفاء كلمة المرور";
+          btn.addEventListener("click", function () {
+            var inp = document.getElementById(tid);
+            if (!inp) return;
+            if (inp.type === "password") {
+              inp.type = "text";
+              btn.classList.add("is-visible");
+              btn.setAttribute("aria-pressed", "true");
+              btn.setAttribute("aria-label", labelHide);
+              btn.setAttribute("title", labelHide);
+            } else {
+              inp.type = "password";
+              btn.classList.remove("is-visible");
+              btn.setAttribute("aria-pressed", "false");
+              btn.setAttribute("aria-label", labelShow);
+              btn.setAttribute("title", labelShow);
+            }
+          });
+        });
       }
 
       renderUsersList();
@@ -1329,6 +1806,238 @@
 
         showApp();
       });
+    })();
+
+    (function initCreateWizard() {
+      var STEP_LABELS = [
+        "إدراج الرابط",
+        "ترجمة",
+        "عرض المحتوى",
+        "إعادة صياغة",
+        "اختيار القالب",
+        "رفع الصورة",
+        "استخراج القالب",
+        "تصدير كابشن",
+        "عرض قبل التصدير",
+        "استخراج"
+      ];
+      var total = STEP_LABELS.length;
+      var currentStep = 0;
+
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      var errBox = $("wizardError");
+      var okBox = $("wizardSuccess");
+
+      function setErr(msg) {
+        if (errBox) errBox.textContent = msg || "";
+      }
+
+      function validateStep(i) {
+        setErr("");
+        if (okBox) {
+          okBox.hidden = true;
+          okBox.textContent = "";
+        }
+        var t;
+        switch (i) {
+          case 0:
+            t = ($("wizLink").value || "").trim();
+            if (!t) {
+              setErr("يرجى إدراج رابط.");
+              return false;
+            }
+            if (!/^https?:\/\//i.test(t)) {
+              setErr("الرابط يجب أن يبدأ بـ http:// أو https://");
+              return false;
+            }
+            return true;
+          case 1:
+            t = ($("wizTranslation").value || "").trim();
+            if (t.length < 2) {
+              setErr("أدخل نص الترجمة (حرفان على الأقل).");
+              return false;
+            }
+            return true;
+          case 2:
+            if (!$("wizContentOk").checked) {
+              setErr("يُرجى تأكيد مراجعة المحتوى.");
+              return false;
+            }
+            return true;
+          case 3:
+            t = ($("wizRewrite").value || "").trim();
+            if (t.length < 4) {
+              setErr("أدخل نص إعادة الصياغة (4 أحرف على الأقل).");
+              return false;
+            }
+            return true;
+          case 4:
+            if (!$("wizTemplate").value) {
+              setErr("اختر قالباً من القائمة.");
+              return false;
+            }
+            return true;
+          case 5:
+            if (!$("wizImage").files || !$("wizImage").files[0]) {
+              setErr("ارفع صورة للمتابعة.");
+              return false;
+            }
+            return true;
+          case 6:
+            t = ($("wizExtractTemplate").value || "").trim();
+            if (t.length < 3) {
+              setErr("أدخل نص استخراج القالب.");
+              return false;
+            }
+            return true;
+          case 7:
+            t = ($("wizCaption").value || "").trim();
+            if (t.length < 2) {
+              setErr("أدخل نص الكابشن.");
+              return false;
+            }
+            return true;
+          case 8:
+            if (!$("wizPreviewOk").checked) {
+              setErr("يُرجى التأكيد بعد مراجعة المعاينة.");
+              return false;
+            }
+            return true;
+          case 9:
+            t = ($("wizFinalExport").value || "").trim();
+            if (!t) {
+              setErr("أدخل الناتج النهائي أو اضغط «توليد الناتج من الخطوات».");
+              return false;
+            }
+            return true;
+          default:
+            return true;
+        }
+      }
+
+      function buildPreviewText() {
+        var link = ($("wizLink").value || "").trim();
+        var tr = ($("wizTranslation").value || "").trim();
+        var rw = ($("wizRewrite").value || "").trim();
+        var tpl = $("wizTemplate");
+        var tplText = tpl && tpl.options[tpl.selectedIndex] ? tpl.options[tpl.selectedIndex].text : "";
+        var img = $("wizImage").files && $("wizImage").files[0];
+        var imgName = img ? img.name : "—";
+        var ex = ($("wizExtractTemplate").value || "").trim();
+        var cap = ($("wizCaption").value || "").trim();
+        return (
+          "الرابط: " +
+          link +
+          "\n\nالقالب: " +
+          tplText +
+          "\n\nالصورة: " +
+          imgName +
+          "\n\nمقتطف الترجمة:\n" +
+          tr.slice(0, 280) +
+          (tr.length > 280 ? "…" : "") +
+          "\n\nمقتطف إعادة الصياغة:\n" +
+          rw.slice(0, 280) +
+          (rw.length > 280 ? "…" : "") +
+          "\n\nاستخراج القالب:\n" +
+          ex.slice(0, 320) +
+          (ex.length > 320 ? "…" : "") +
+          "\n\nالكابشن:\n" +
+          cap.slice(0, 400) +
+          (cap.length > 400 ? "…" : "")
+        );
+      }
+
+      function mergeOutput() {
+        var blocks = [];
+        blocks.push("=== منشور ===");
+        blocks.push("");
+        blocks.push(($("wizCaption").value || "").trim());
+        blocks.push("");
+        blocks.push("--- النص ---");
+        blocks.push(($("wizRewrite").value || "").trim());
+        blocks.push("");
+        blocks.push("--- الرابط ---");
+        blocks.push(($("wizLink").value || "").trim());
+        $("wizFinalExport").value = blocks.join("\n");
+        setErr("");
+      }
+
+      function updateUI() {
+        document.querySelectorAll("#panel-create .wizard-pane").forEach(function (pane) {
+          var s = parseInt(pane.getAttribute("data-step"), 10);
+          pane.classList.toggle("is-active", s === currentStep);
+        });
+
+        $("wizardStepNum").textContent = String(currentStep + 1);
+        $("wizardStepTotal").textContent = String(total);
+        $("wizardStepTitle").textContent = STEP_LABELS[currentStep];
+        $("wizardProgressFill").style.width = ((currentStep + 1) / total) * 100 + "%";
+
+        var stripNodes = document.querySelectorAll("#wizardStrip .wizard-strip-step");
+        stripNodes.forEach(function (node, idx) {
+          node.classList.remove("is-current", "is-done");
+          if (idx < currentStep) node.classList.add("is-done");
+          if (idx === currentStep) node.classList.add("is-current");
+        });
+
+        $("wizardPrev").disabled = currentStep === 0;
+        $("wizardNext").hidden = currentStep >= total - 1;
+        $("wizardFinish").hidden = currentStep !== total - 1;
+
+        if (currentStep === 8) {
+          $("wizPreviewSummary").textContent = buildPreviewText();
+        }
+      }
+
+      var strip = $("wizardStrip");
+      if (!strip || !$("wizardNext")) return;
+
+      STEP_LABELS.forEach(function (label, idx) {
+        var sp = document.createElement("span");
+        sp.className = "wizard-strip-step";
+        sp.textContent = idx + 1 + ". " + label;
+        strip.appendChild(sp);
+      });
+
+      $("wizardNext").addEventListener("click", function () {
+        if (!validateStep(currentStep)) return;
+        if (currentStep === 1) {
+          $("wizContentView").value = $("wizTranslation").value;
+        }
+        if (currentStep < total - 1) {
+          currentStep++;
+          updateUI();
+        }
+      });
+
+      $("wizardPrev").addEventListener("click", function () {
+        setErr("");
+        if (okBox) {
+          okBox.hidden = true;
+          okBox.textContent = "";
+        }
+        if (currentStep > 0) {
+          currentStep--;
+          updateUI();
+        }
+      });
+
+      var btnMerge = $("wizBtnMerge");
+      if (btnMerge) btnMerge.addEventListener("click", mergeOutput);
+
+      $("wizardFinish").addEventListener("click", function () {
+        if (!validateStep(9)) return;
+        if (okBox) {
+          okBox.hidden = false;
+          okBox.textContent = "تم إكمال مسار إنشاء المنشور بنجاح.";
+        }
+        setErr("");
+      });
+
+      updateUI();
     })();
 
     (function initHeroTabs() {
