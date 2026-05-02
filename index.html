@@ -208,9 +208,25 @@
     }
 
     .navbar-links {
+      flex: 1 1 auto;
       display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
       list-style: none;
-      gap: 2.5rem;
+      gap: 0.65rem 1.25rem;
+      min-width: 0;
+    }
+
+    .navbar-links > li {
+      display: flex;
+      align-items: center;
+    }
+
+    .navbar-links .hero-tab {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.85rem;
+      white-space: nowrap;
     }
 
     .navbar-links a {
@@ -251,15 +267,46 @@
       cursor: pointer;
     }
 
-    /* ===== Hero Section ===== */
+    /* ===== Hero + محتوى التاب ===== */
     .hero {
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 6rem 2rem 2rem;
+      justify-content: flex-start;
+      padding: 6rem 1.5rem 2rem;
       text-align: center;
       position: relative;
+    }
+
+    .hero-hub {
+      flex: 0 0 auto;
+      margin-bottom: 2rem;
+    }
+
+    .hero-tab {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.55rem 1.15rem;
+      border: 2px solid rgba(255, 195, 0, 0.35);
+      border-radius: 999px;
+      background: rgba(0, 29, 61, 0.5);
+      color: var(--white);
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hero-tab:hover {
+      border-color: var(--bus-yellow);
+      color: var(--bus-yellow);
+    }
+
+    .hero-tab.is-active {
+      background: var(--bus-yellow);
+      color: var(--ink-black);
+      border-color: var(--bus-yellow);
+      box-shadow: 0 0 24px rgba(255, 195, 0, 0.35);
     }
 
     .hero-logo {
@@ -270,6 +317,37 @@
       letter-spacing: 0.02em;
       user-select: none;
       text-shadow: 0 0 80px rgba(255, 195, 0, 0.4);
+      margin: 0;
+    }
+
+    .tab-panels {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      flex: 1 1 auto;
+    }
+
+    .tab-panel {
+      display: none;
+      padding: 1.25rem 1rem 2rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 195, 0, 0.2);
+      background: rgba(0, 29, 61, 0.35);
+      text-align: right;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .tab-panel h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--bus-yellow);
+      margin-bottom: 0.75rem;
     }
 
     /* ===== Footer ===== */
@@ -291,6 +369,8 @@
     @media (max-width: 768px) {
       .navbar {
         padding: 1rem 1.5rem;
+        flex-wrap: wrap;
+        row-gap: 0.75rem;
       }
 
       .navbar-links {
@@ -300,14 +380,31 @@
         right: 0;
         left: 0;
         flex-direction: column;
+        align-items: stretch;
         background-color: var(--ink-black);
         padding: 1.5rem;
-        gap: 1.2rem;
+        gap: 1rem;
         border-bottom: 2px solid var(--bus-yellow);
+        max-width: none;
+        margin: 0;
+      }
+
+      .navbar-links > li {
+        justify-content: center;
+      }
+
+      .navbar-links .hero-tab {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.9rem;
+        padding: 0.55rem 1rem;
       }
 
       .navbar-links.active {
         display: flex;
+        width: 100%;
+        flex: none;
       }
 
       .menu-toggle {
@@ -361,6 +458,18 @@
     <div class="navbar-logo">+90</div>
     <ul class="navbar-links" id="navLinks">
       <li><a href="#home">الرئيسية</a></li>
+      <li>
+        <button type="button" class="hero-tab is-active" data-tab="create" id="tab-create" aria-controls="panel-create" aria-pressed="true">إنشاء منشور</button>
+      </li>
+      <li>
+        <button type="button" class="hero-tab" data-tab="posts" id="tab-posts" aria-controls="panel-posts" aria-pressed="false">المنشورات</button>
+      </li>
+      <li>
+        <button type="button" class="hero-tab" data-tab="templates" id="tab-templates" aria-controls="panel-templates" aria-pressed="false">القوالب</button>
+      </li>
+      <li>
+        <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">الإعدادات</button>
+      </li>
       <li><a href="#about">عن الموقع</a></li>
       <li><a href="#contact">تواصل</a></li>
     </ul>
@@ -370,9 +479,31 @@
     </div>
   </nav>
 
-  <!-- ===== Hero Section ===== -->
+  <!-- ===== Hero: الشعار + محتوى التاب (التابات في شريط التنقل) ===== -->
   <section class="hero" id="home">
-    <h1 class="hero-logo">+90</h1>
+    <div class="hero-hub">
+      <!-- غيّر نص الشعار من هنا -->
+      <h1 class="hero-logo">+90</h1>
+    </div>
+
+    <div class="tab-panels">
+      <div class="tab-panel active" id="panel-create" role="region" aria-labelledby="tab-create">
+        <h2>إنشاء منشور</h2>
+        <p>منطقة إنشاء المنشور — أضف هنا الحقول والمحرر لاحقاً.</p>
+      </div>
+      <div class="tab-panel" id="panel-posts" role="region" aria-labelledby="tab-posts">
+        <h2>المنشورات</h2>
+        <p>قائمة المنشورات المحفوظة ستظهر هنا.</p>
+      </div>
+      <div class="tab-panel" id="panel-templates" role="region" aria-labelledby="tab-templates">
+        <h2>القوالب</h2>
+        <p>قوالب جاهزة للمنشورات.</p>
+      </div>
+      <div class="tab-panel" id="panel-settings" role="region" aria-labelledby="tab-settings">
+        <h2>الإعدادات</h2>
+        <p>تفضيلات التطبيق والحساب.</p>
+      </div>
+    </div>
   </section>
 
   <!-- ===== Footer ===== -->
@@ -434,6 +565,41 @@
 
         showApp();
       });
+    })();
+
+    (function initHeroTabs() {
+      var tabs = document.querySelectorAll(".hero-tab");
+      var panelByTab = {
+        create: document.getElementById("panel-create"),
+        posts: document.getElementById("panel-posts"),
+        templates: document.getElementById("panel-templates"),
+        settings: document.getElementById("panel-settings")
+      };
+
+      function showTab(tabId) {
+        tabs.forEach(function (btn) {
+          var on = btn.getAttribute("data-tab") === tabId;
+          btn.classList.toggle("is-active", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        Object.keys(panelByTab).forEach(function (key) {
+          var p = panelByTab[key];
+          if (!p) return;
+          var on = key === tabId;
+          p.classList.toggle("active", on);
+          p.setAttribute("aria-hidden", on ? "false" : "true");
+        });
+      }
+
+      tabs.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          showTab(btn.getAttribute("data-tab"));
+          var nl = document.getElementById("navLinks");
+          if (nl) nl.classList.remove("active");
+        });
+      });
+
+      showTab("create");
     })();
 
     document.getElementById("navLogout").addEventListener("click", function () {
