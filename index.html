@@ -34,22 +34,19 @@
       box-shadow: 0 0 40px rgba(255, 195, 0, 0.15);
     }
 
-    .login-card .login-brand {
+    .login-card .brand-slot--login {
       font-family: "Bebas Neue", sans-serif;
       font-size: 2.5rem;
       color: var(--bus-yellow);
       text-align: center;
       margin-bottom: 0.5rem;
       letter-spacing: 0.05em;
-      font-weight: normal;
-      line-height: 1.2;
+      line-height: 1.1;
     }
 
-    .login-card .login-brand .brand-mark-img {
-      max-height: 3rem;
+    .login-card .brand-slot--login .brand-logo-img {
+      max-height: 3.5rem;
       width: auto;
-      vertical-align: middle;
-      object-fit: contain;
     }
 
     .login-card p.sub {
@@ -201,37 +198,6 @@
       transition: all 0.3s ease;
     }
 
-    .brand-mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
-    }
-
-    .brand-mark.has-custom-logo .brand-mark-text {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    .brand-mark.has-custom-logo {
-      position: relative;
-    }
-
-    .brand-mark .brand-mark-img {
-      display: none;
-    }
-
-    .brand-mark.has-custom-logo .brand-mark-img {
-      display: inline-block;
-    }
-
     .navbar-logo {
       font-family: "Bebas Neue", sans-serif;
       font-size: 2.2rem;
@@ -239,13 +205,14 @@
       letter-spacing: 0.05em;
       cursor: pointer;
       user-select: none;
-      min-height: 2.2rem;
+      display: flex;
+      align-items: center;
+      line-height: 1;
     }
 
-    .navbar-logo .brand-mark-img {
-      max-height: 2.5rem;
+    .navbar-logo .brand-logo-img {
+      max-height: 2.35rem;
       width: auto;
-      object-fit: contain;
     }
 
     .navbar-end {
@@ -365,97 +332,122 @@
       user-select: none;
       text-shadow: 0 0 80px rgba(255, 195, 0, 0.4);
       margin: 0;
-    }
-
-    .hero-logo.has-custom-logo {
-      text-shadow: none;
-    }
-
-    .hero-logo .brand-mark-img {
-      max-height: clamp(5rem, 22vw, 18rem);
-      max-width: min(92vw, 560px);
-      width: auto;
-      height: auto;
-      object-fit: contain;
-      filter: drop-shadow(0 0 60px rgba(255, 195, 0, 0.35));
-    }
-
-    .footer-brand .brand-mark-img {
-      max-height: 1.2em;
-      width: auto;
-      vertical-align: -0.15em;
-      object-fit: contain;
-    }
-
-    /* ===== رفع الشعار (تاب الإعدادات) ===== */
-    .settings-hint {
-      font-size: 0.95rem;
-      color: rgba(255, 255, 255, 0.65);
-      margin-bottom: 1rem;
-    }
-
-    .logo-upload-row {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
+      justify-content: center;
     }
 
-    .logo-upload-label {
+    .hero-logo .brand-logo-img {
+      max-height: min(42vh, 320px);
+      width: auto;
+      max-width: min(92vw, 520px);
+      object-fit: contain;
+      filter: drop-shadow(0 0 40px rgba(255, 195, 0, 0.35));
+    }
+
+    /* شعار مخصص: إخفاء النص وإظهار الصورة */
+    .brand-logo-img {
+      display: none;
+      vertical-align: middle;
+    }
+
+    html.has-custom-logo .brand-logo-img {
+      display: inline-block;
+    }
+
+    html.has-custom-logo .brand-logo-text {
+      display: none;
+    }
+
+    .footer .brand-slot--footer {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .footer .brand-slot--footer .brand-logo-img {
+      max-height: 1.35em;
+      width: auto;
+    }
+
+    /* ===== رفع الشعار (إعدادات) ===== */
+    .settings-block {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(255, 195, 0, 0.2);
+    }
+
+    .settings-block h3 {
+      font-size: 1rem;
       font-weight: 700;
       color: var(--bus-yellow);
+      margin-bottom: 0.75rem;
     }
 
-    #logoFileInput {
-      flex: 1 1 auto;
-      min-width: 0;
-      font-size: 0.9rem;
+    .btn-settings {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      border: 2px solid var(--bus-yellow);
+      background: rgba(255, 195, 0, 0.12);
+      color: var(--bus-yellow);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-settings:hover {
+      background: rgba(255, 195, 0, 0.22);
+    }
+
+    .logo-upload-zone {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 195, 0, 0.45);
+      background: rgba(0, 8, 20, 0.45);
+    }
+
+    .logo-upload-zone label.file-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
       color: var(--white);
     }
 
-    .logo-preview-wrap {
-      margin: 1rem 0;
-      padding: 1rem;
-      border-radius: 10px;
-      border: 1px dashed rgba(255, 195, 0, 0.4);
-      background: rgba(0, 8, 20, 0.4);
-      text-align: center;
+    .logo-upload-zone input[type="file"] {
+      width: 100%;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
     }
 
-    .logo-preview-wrap .preview-label {
+    .logo-upload-zone .hint {
       font-size: 0.85rem;
-      color: rgba(255, 255, 255, 0.55);
-      margin-bottom: 0.5rem;
-    }
-
-    #logoPreviewImg {
-      max-height: 120px;
-      max-width: 100%;
-      object-fit: contain;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 0.65rem;
     }
 
     .logo-upload-error {
       color: #ff6b6b;
       font-size: 0.9rem;
-      min-height: 1.4em;
-      margin-bottom: 0.75rem;
+      margin-top: 0.5rem;
+      min-height: 1.3em;
     }
 
-    .logo-remove-btn {
+    .btn-remove-logo {
+      margin-top: 1rem;
       font-family: inherit;
-      font-size: 0.95rem;
-      font-weight: 700;
-      padding: 0.55rem 1.2rem;
-      border-radius: 8px;
+      font-size: 0.9rem;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
       border: 1px solid rgba(255, 107, 107, 0.6);
       background: transparent;
       color: #ff8f8f;
       cursor: pointer;
-      transition: background 0.2s ease;
     }
 
-    .logo-remove-btn:hover {
+    .btn-remove-logo:hover {
       background: rgba(255, 107, 107, 0.12);
     }
 
@@ -500,6 +492,11 @@
     }
 
     .footer span {
+      color: var(--bus-yellow);
+      font-weight: 700;
+    }
+
+    .footer .brand-slot .brand-logo-text {
       color: var(--bus-yellow);
       font-weight: 700;
     }
@@ -570,9 +567,9 @@
   <!-- ===== شاشة تسجيل الدخول (تظهر قبل الموقع) ===== -->
   <div class="login-screen" id="loginScreen" aria-live="polite">
     <div class="login-card">
-      <h2 class="login-brand brand-mark">
-        <span class="brand-mark-text">+90</span>
-        <img class="brand-mark-img" src="" alt="" decoding="async" hidden />
+      <h2 class="brand-slot brand-slot--login">
+        <img class="brand-logo-img" alt="+90" width="0" height="0" decoding="async" />
+        <span class="brand-logo-text">+90</span>
       </h2>
       <p class="sub">سجّل الدخول للمتابعة</p>
       <form id="loginForm" novalidate>
@@ -597,9 +594,9 @@
   <div id="siteContent">
   <!-- ===== Navbar ===== -->
   <nav class="navbar">
-    <div class="navbar-logo brand-mark">
-      <span class="brand-mark-text">+90</span>
-      <img class="brand-mark-img" src="" alt="" decoding="async" hidden />
+    <div class="navbar-logo brand-slot brand-slot--nav" title="+90">
+      <img class="brand-logo-img" alt="+90" width="0" height="0" decoding="async" />
+      <span class="brand-logo-text">+90</span>
     </div>
     <ul class="navbar-links" id="navLinks">
       <li>
@@ -615,7 +612,7 @@
         <button type="button" class="hero-tab" data-tab="templates" id="tab-templates" aria-controls="panel-templates" aria-pressed="false">القوالب</button>
       </li>
       <li>
-        <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">رفع الشعار</button>
+        <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">الإعدادات</button>
       </li>
     </ul>
     <div class="navbar-end">
@@ -627,10 +624,10 @@
   <!-- ===== Hero: الشعار + محتوى التاب (التابات في شريط التنقل) ===== -->
   <section class="hero" id="home">
     <div class="hero-hub">
-      <!-- غيّر نص الشعار الافتراضي من هنا (يُستبدل بالصورة إن رفعت شعاراً) -->
-      <h1 class="hero-logo brand-mark">
-        <span class="brand-mark-text">+90</span>
-        <img class="brand-mark-img" src="" alt="شعار المنصة" decoding="async" hidden />
+      <!-- غيّر نص الشعار من هنا (أو ارفع PNG من الإعدادات) -->
+      <h1 class="hero-logo brand-slot brand-slot--hero">
+        <img class="brand-logo-img" alt="+90" width="0" height="0" decoding="async" />
+        <span class="brand-logo-text">+90</span>
       </h1>
     </div>
 
@@ -652,25 +649,26 @@
         <p>قوالب جاهزة للمنشورات.</p>
       </div>
       <div class="tab-panel" id="panel-settings" role="region" aria-labelledby="tab-settings">
-        <h2>رفع الشعار</h2>
-        <p class="settings-hint">ملف PNG فقط. بعد الرفع يُستبدل «+90» بالصورة في شريط التنقل، الصفحة الرئيسية، تسجيل الدخول، والتذييل.</p>
-        <div class="logo-upload-row">
-          <label for="logoFileInput" class="logo-upload-label">اختر ملف PNG</label>
-          <input type="file" id="logoFileInput" accept="image/png,.png" />
-        </div>
-        <div class="logo-preview-wrap" id="logoPreviewWrap" hidden>
-          <p class="preview-label">معاينة</p>
-          <img id="logoPreviewImg" alt="معاينة الشعار" />
-        </div>
-        <p class="logo-upload-error" id="logoUploadError" role="alert"></p>
-        <button type="button" class="logo-remove-btn" id="logoRemoveBtn">إزالة الشعار والعودة لـ +90</button>
+        <h2>الإعدادات</h2>
+        <p>تفضيلات التطبيق والحساب.</p>
+        <section class="settings-block" aria-labelledby="upload-logo-heading">
+          <h3 id="upload-logo-heading">رفع الشعار</h3>
+          <button type="button" class="btn-settings" id="btnToggleLogoUpload" aria-expanded="false" aria-controls="logoUploadZone">رفع الشعار</button>
+          <div id="logoUploadZone" class="logo-upload-zone" hidden>
+            <label class="file-label" for="logoFileInput">اختر ملف الشعار (PNG فقط)</label>
+            <input type="file" id="logoFileInput" accept="image/png,.png" />
+            <p class="hint">يُستبدل الشعار النصي «+90» في كل الصفحة. يُحفظ محلياً في هذا المتصفح فقط (حتى حجم تقريبي 2 ميجابايت).</p>
+            <p class="logo-upload-error" id="logoUploadError" role="alert"></p>
+            <button type="button" class="btn-remove-logo" id="btnRemoveLogo">إزالة الشعار والعودة إلى «+90»</button>
+          </div>
+        </section>
       </div>
     </div>
   </section>
 
   <!-- ===== Footer ===== -->
   <footer class="footer">
-    <p>© 2026 <span class="footer-brand brand-mark"><span class="brand-mark-text">+90</span><img class="brand-mark-img" src="" alt="" decoding="async" hidden /></span> - جميع الحقوق محفوظة</p>
+    <p>© 2026 <span class="brand-slot brand-slot--footer"><img class="brand-logo-img" alt="+90" width="0" height="0" decoding="async" /><span class="brand-logo-text">+90</span></span> - جميع الحقوق محفوظة</p>
   </footer>
   </div>
 
@@ -684,6 +682,110 @@
     var SESSION_KEY = "90plus_session";
     var REMEMBER_KEY = "90plus_remember";
     var LOGO_STORAGE_KEY = "90plus_custom_logo_png";
+    var LOGO_MAX_BYTES = 2 * 1024 * 1024;
+
+    (function initCustomLogo() {
+      function allLogoImgs() {
+        return document.querySelectorAll("img.brand-logo-img");
+      }
+
+      function applyDataUrl(dataUrl) {
+        if (!dataUrl) {
+          document.documentElement.classList.remove("has-custom-logo");
+          allLogoImgs().forEach(function (img) {
+            img.removeAttribute("src");
+            img.setAttribute("width", "0");
+            img.setAttribute("height", "0");
+          });
+          return;
+        }
+        document.documentElement.classList.add("has-custom-logo");
+        allLogoImgs().forEach(function (img) {
+          img.src = dataUrl;
+          img.removeAttribute("width");
+          img.removeAttribute("height");
+        });
+      }
+
+      function loadFromStorage() {
+        try {
+          var s = localStorage.getItem(LOGO_STORAGE_KEY);
+          if (s && /^data:image\/png/i.test(s)) applyDataUrl(s);
+        } catch (e) {}
+      }
+
+      function saveDataUrl(dataUrl) {
+        localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
+        applyDataUrl(dataUrl);
+      }
+
+      function clearStored() {
+        try {
+          localStorage.removeItem(LOGO_STORAGE_KEY);
+        } catch (e) {}
+        applyDataUrl(null);
+      }
+
+      var btnToggle = document.getElementById("btnToggleLogoUpload");
+      var zone = document.getElementById("logoUploadZone");
+      var input = document.getElementById("logoFileInput");
+      var errEl = document.getElementById("logoUploadError");
+      var btnRemove = document.getElementById("btnRemoveLogo");
+
+      if (btnToggle && zone) {
+        btnToggle.addEventListener("click", function () {
+          zone.hidden = !zone.hidden;
+          btnToggle.setAttribute("aria-expanded", zone.hidden ? "false" : "true");
+        });
+      }
+
+      if (input) {
+        input.addEventListener("change", function () {
+          if (errEl) errEl.textContent = "";
+          var f = input.files && input.files[0];
+          if (!f) return;
+          if (f.type !== "image/png") {
+            if (errEl) errEl.textContent = "يرجى اختيار ملف PNG فقط.";
+            input.value = "";
+            return;
+          }
+          if (f.size > LOGO_MAX_BYTES) {
+            if (errEl) errEl.textContent = "الملف كبير جداً. استخدم صورة PNG أصغر (حد أقصى تقريبي 2 ميجابايت).";
+            input.value = "";
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function () {
+            var result = reader.result;
+            if (typeof result !== "string" || !/^data:image\/png/i.test(result)) {
+              if (errEl) errEl.textContent = "تعذر قراءة الملف.";
+              return;
+            }
+            try {
+              saveDataUrl(result);
+              if (errEl) errEl.textContent = "";
+            } catch (e) {
+              if (errEl) errEl.textContent = "تعذر الحفظ في المتصفح (قد تكون المساحة ممتلئة).";
+            }
+            input.value = "";
+          };
+          reader.onerror = function () {
+            if (errEl) errEl.textContent = "فشل قراءة الملف.";
+          };
+          reader.readAsDataURL(f);
+        });
+      }
+
+      if (btnRemove) {
+        btnRemove.addEventListener("click", function () {
+          if (errEl) errEl.textContent = "";
+          clearStored();
+          if (input) input.value = "";
+        });
+      }
+
+      loadFromStorage();
+    })();
 
     function showApp() {
       document.documentElement.classList.add("pre-authed");
@@ -728,88 +830,6 @@
 
         showApp();
       });
-    })();
-
-    (function initBrandLogo() {
-      function applyDataUrl(dataUrl) {
-        document.querySelectorAll(".brand-mark").forEach(function (wrap) {
-          var imgEl = wrap.querySelector(".brand-mark-img");
-          if (!imgEl) return;
-          if (dataUrl) {
-            wrap.classList.add("has-custom-logo");
-            imgEl.src = dataUrl;
-            imgEl.hidden = false;
-          } else {
-            wrap.classList.remove("has-custom-logo");
-            imgEl.removeAttribute("src");
-            imgEl.hidden = true;
-          }
-        });
-        var previewWrap = document.getElementById("logoPreviewWrap");
-        var previewImg = document.getElementById("logoPreviewImg");
-        if (previewWrap && previewImg) {
-          if (dataUrl) {
-            previewImg.src = dataUrl;
-            previewWrap.hidden = false;
-          } else {
-            previewImg.removeAttribute("src");
-            previewWrap.hidden = true;
-          }
-        }
-      }
-
-      function loadFromStorage() {
-        try {
-          var data = localStorage.getItem(LOGO_STORAGE_KEY);
-          applyDataUrl(data || null);
-        } catch (e) {
-          applyDataUrl(null);
-        }
-      }
-
-      var fileInput = document.getElementById("logoFileInput");
-      var errEl = document.getElementById("logoUploadError");
-      var removeBtn = document.getElementById("logoRemoveBtn");
-
-      if (fileInput) {
-        fileInput.addEventListener("change", function () {
-          if (errEl) errEl.textContent = "";
-          var file = fileInput.files && fileInput.files[0];
-          if (!file) return;
-          if (file.type !== "image/png") {
-            if (errEl) errEl.textContent = "يُقبل ملف PNG فقط.";
-            fileInput.value = "";
-            return;
-          }
-          var reader = new FileReader();
-          reader.onload = function () {
-            var dataUrl = reader.result;
-            try {
-              localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
-              applyDataUrl(dataUrl);
-            } catch (err) {
-              if (errEl) errEl.textContent = "تعذر الحفظ — جرّب صورة أصغر.";
-            }
-          };
-          reader.onerror = function () {
-            if (errEl) errEl.textContent = "تعذر قراءة الملف.";
-          };
-          reader.readAsDataURL(file);
-        });
-      }
-
-      if (removeBtn) {
-        removeBtn.addEventListener("click", function () {
-          if (errEl) errEl.textContent = "";
-          try {
-            localStorage.removeItem(LOGO_STORAGE_KEY);
-          } catch (e) {}
-          applyDataUrl(null);
-          if (fileInput) fileInput.value = "";
-        });
-      }
-
-      loadFromStorage();
     })();
 
     (function initHeroTabs() {
