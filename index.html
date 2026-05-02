@@ -1019,6 +1019,26 @@
       color: #ff6b6b;
     }
 
+    .wiz-extract-loading {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--bus-yellow);
+      margin: 0.65rem 0;
+      animation: wizPulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes wizPulse {
+      50% {
+        opacity: 0.65;
+      }
+    }
+
+    #wizExtractResult {
+      min-height: 220px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
     .wiz-check {
       display: flex;
       align-items: flex-start;
@@ -1326,6 +1346,19 @@
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnExtractLink">استخراج</button>
                 </div>
                 <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
+                <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري استخراج المحتوى من الرابط… قد يستغرق ذلك قليلاً.</p>
+                <div class="wiz-field" id="wizExtractResultWrap" hidden>
+                  <label for="wizExtractResult">نتيجة الاستخراج</label>
+                  <textarea id="wizExtractResult" readonly rows="14" dir="auto"></textarea>
+                  <div class="wiz-field-actions">
+                    <button type="button" class="wizard-btn wizard-btn--merge" id="wizBtnCopyExtractToTranslation">
+                      نسخ النص إلى خطوة الترجمة
+                    </button>
+                  </div>
+                </div>
+                <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
+                  يُستخرج النص الظاهر في الصفحة والعناوين والفقرات، وما يُرفَق غالباً من وصف أو نص بديل للصور إن وفره الموقع. النص المرسوم داخل الصور فقط (بدون طبقة نصية) قد لا يظهر إلا بخدمة OCR منفصلة.
+                </p>
               </div>
 
               <div id="wizBlockImage" class="wiz-source-block" hidden>
@@ -2074,6 +2107,14 @@
           fb.textContent = "";
           fb.classList.remove("ok", "err");
         }
+        if (mode !== "link") {
+          var lr = $("wizExtractLoading");
+          var rw = $("wizExtractResultWrap");
+          var ta = $("wizExtractResult");
+          if (lr) lr.hidden = true;
+          if (rw) rw.hidden = true;
+          if (ta) ta.value = "";
+        }
       }
 
       function validateStep(i) {
@@ -2305,12 +2346,40 @@
       var btnMerge = $("wizBtnMerge");
       if (btnMerge) btnMerge.addEventListener("click", mergeOutput);
 
+      function fetchPageTextFallback(pageUrl) {
+        return fetch(
+          "https://api.allorigins.win/get?url=" + encodeURIComponent(pageUrl)
+        )
+          .then(function (r) {
+            if (!r.ok) throw new Error("allorigins");
+            return r.json();
+          })
+          .then(function (data) {
+            var html = data.contents;
+            if (!html || typeof html !== "string") throw new Error("no html");
+            var doc = new DOMParser().parseFromString(html, "text/html");
+            var root =
+              doc.querySelector("article") ||
+              doc.querySelector("main") ||
+              doc.querySelector('[role="main"]') ||
+              doc.body;
+            if (!root) throw new Error("no root");
+            var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+            if (text.length < 15) throw new Error("short");
+            return text;
+          });
+      }
+
       var btnExtractLink = $("wizBtnExtractLink");
       var fbExtractLink = $("wizExtractLinkFeedback");
       if (btnExtractLink) {
         btnExtractLink.addEventListener("click", function () {
           if (!fbExtractLink) return;
           fbExtractLink.classList.remove("ok", "err");
+          var loadEl = $("wizExtractLoading");
+          var resultWrap = $("wizExtractResultWrap");
+          var resultTa = $("wizExtractResult");
+
           if (getSourceType() !== "link") {
             fbExtractLink.textContent = "زر الاستخراج يعمل عند اختيار نوع «رابط».";
             fbExtractLink.classList.add("err");
@@ -2327,13 +2396,79 @@
             fbExtractLink.classList.add("err");
             return;
           }
-          try {
-            sessionStorage.setItem("90plus_wizard_source_url", u);
-            sessionStorage.setItem("90plus_wizard_source_type", "link");
-          } catch (e) {}
-          fbExtractLink.textContent =
-            "تم تجهيز الرابط والبيانات للاستخراج. يمكنك لاحقاً ربط هذا الزر بخادم أو امتداد لجلب المحتوى.";
+
+          if (loadEl) loadEl.hidden = false;
+          btnExtractLink.disabled = true;
+          if (resultTa) resultTa.value = "";
+          if (resultWrap) resultWrap.hidden = true;
+
+          var tmax = null;
+          var ac = new AbortController();
+          tmax = setTimeout(function () {
+            ac.abort();
+          }, 90000);
+
+          var jinaUrl = "https://r.jina.ai/" + u.replace(/\s+/g, "");
+
+          fetch(jinaUrl, {
+            method: "GET",
+            signal: ac.signal,
+            headers: {
+              Accept: "text/plain",
+              "X-Return-Format": "markdown"
+            }
+          })
+            .then(function (res) {
+              if (tmax) clearTimeout(tmax);
+              if (!res.ok) throw new Error("jina");
+              return res.text();
+            })
+            .then(function (text) {
+              if (!text || !String(text).trim()) throw new Error("empty");
+              return text;
+            })
+            .catch(function () {
+              if (tmax) clearTimeout(tmax);
+              return fetchPageTextFallback(u);
+            })
+            .then(function (text) {
+              var out = String(text || "").trim();
+              if (!out) throw new Error("empty2");
+              if (resultTa) resultTa.value = out;
+              if (resultWrap) resultWrap.hidden = false;
+              fbExtractLink.textContent =
+                "تم استخراج محتوى الصفحة (نصاً والتسميات التوضيحية للصور إن وفرها الموقع). راجع النتيجة أدناه.";
+              fbExtractLink.classList.add("ok");
+              try {
+                sessionStorage.setItem("90plus_wizard_source_url", u);
+                sessionStorage.setItem("90plus_wizard_source_type", "link");
+                sessionStorage.setItem("90plus_wizard_extracted_text", out.slice(0, 1800000));
+              } catch (e) {}
+            })
+            .catch(function () {
+              if (resultTa) resultTa.value = "";
+              if (resultWrap) resultWrap.hidden = true;
+              fbExtractLink.textContent =
+                "تعذر استخراج المحتوى (الموقع يمنع الوصول، انقطاع الشبكة، أو مهلة زمنية). جرّب رابط مقال عام أو كرّر المحاولة.";
+              fbExtractLink.classList.add("err");
+            })
+            .finally(function () {
+              if (loadEl) loadEl.hidden = true;
+              btnExtractLink.disabled = false;
+            });
+        });
+      }
+
+      var wizCopyTr = $("wizBtnCopyExtractToTranslation");
+      if (wizCopyTr) {
+        wizCopyTr.addEventListener("click", function () {
+          var src = $("wizExtractResult");
+          var dst = $("wizTranslation");
+          if (!src || !dst || !fbExtractLink) return;
+          dst.value = src.value || "";
+          fbExtractLink.classList.remove("err");
           fbExtractLink.classList.add("ok");
+          fbExtractLink.textContent = "تم نسخ النص إلى حقل الترجمة في الخطوة التالية.";
         });
       }
 
