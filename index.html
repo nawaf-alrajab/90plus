@@ -925,6 +925,38 @@
       box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.15);
     }
 
+    .wiz-field-actions {
+      margin-top: 0.65rem;
+    }
+
+    .wizard-btn--extract {
+      border-color: rgba(255, 195, 0, 0.55);
+      color: var(--bus-yellow);
+      background: rgba(255, 195, 0, 0.1);
+      font-size: 0.88rem;
+      padding: 0.48rem 1.1rem;
+    }
+
+    .wizard-btn--extract:hover:not(:disabled) {
+      background: rgba(255, 195, 0, 0.22);
+    }
+
+    .wiz-extract-feedback {
+      font-size: 0.86rem;
+      margin-top: 0.6rem;
+      min-height: 1.25em;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .wiz-extract-feedback.ok {
+      color: #7bed9f;
+    }
+
+    .wiz-extract-feedback.err {
+      color: #ff6b6b;
+    }
+
     .wiz-check {
       display: flex;
       align-items: flex-start;
@@ -1206,6 +1238,10 @@
               <div class="wiz-field">
                 <label for="wizLink">رابط المصدر</label>
                 <input type="url" id="wizLink" placeholder="https://..." autocomplete="off" dir="ltr" />
+                <div class="wiz-field-actions">
+                  <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnExtractLink">استخراج</button>
+                </div>
+                <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
               </div>
             </div>
 
@@ -2123,6 +2159,32 @@
 
       var btnMerge = $("wizBtnMerge");
       if (btnMerge) btnMerge.addEventListener("click", mergeOutput);
+
+      var btnExtractLink = $("wizBtnExtractLink");
+      var fbExtractLink = $("wizExtractLinkFeedback");
+      if (btnExtractLink) {
+        btnExtractLink.addEventListener("click", function () {
+          if (!fbExtractLink) return;
+          fbExtractLink.classList.remove("ok", "err");
+          var u = ($("wizLink").value || "").trim();
+          if (!u) {
+            fbExtractLink.textContent = "أدخل رابط المصدر أولاً.";
+            fbExtractLink.classList.add("err");
+            return;
+          }
+          if (!/^https?:\/\//i.test(u)) {
+            fbExtractLink.textContent = "صيغة الرابط غير صحيحة (يجب أن يبدأ بـ http أو https).";
+            fbExtractLink.classList.add("err");
+            return;
+          }
+          try {
+            sessionStorage.setItem("90plus_wizard_source_url", u);
+          } catch (e) {}
+          fbExtractLink.textContent =
+            "تم تجهيز الرابط للاستخراج. يمكنك لاحقاً ربط هذا الزر بخادم أو امتداد لجلب المحتوى من المصدر.";
+          fbExtractLink.classList.add("ok");
+        });
+      }
 
       $("wizardFinish").addEventListener("click", function () {
         if (!validateStep(9)) return;
