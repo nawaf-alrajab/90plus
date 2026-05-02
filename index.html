@@ -1346,7 +1346,7 @@
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnExtractLink">استخراج</button>
                 </div>
                 <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
-                <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري استخراج المحتوى من الرابط… قد يستغرق ذلك قليلاً.</p>
+                <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري جلب الصفحة ثم تنسيق الخبر عبر OpenAI… قد يستغرق ذلك نصف دقيقة أو أكثر.</p>
                 <div class="wiz-field" id="wizExtractResultWrap" hidden>
                   <label for="wizExtractResult">نتيجة الاستخراج</label>
                   <textarea id="wizExtractResult" readonly rows="14" dir="auto"></textarea>
@@ -1357,7 +1357,7 @@
                   </div>
                 </div>
                 <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
-                  يُستخرج النص الظاهر في الصفحة والعناوين والفقرات، وما يُرفَق غالباً من وصف أو نص بديل للصور إن وفره الموقع. النص المرسوم داخل الصور فقط (بدون طبقة نصية) قد لا يظهر إلا بخدمة OCR منفصلة.
+                  يتطلّب الاستخراج مفتاح OpenAI محفوظاً في الإعدادات. يُجلب نص الصفحة من الرابط إن أمكن، ثم يُنسَّق عبر النموذج (gpt-4o-mini). النص داخل الصور كصورة فقط يحتاج OCR منفصلاً ليس مدمجاً هنا.
                 </p>
               </div>
 
@@ -1593,6 +1593,142 @@
     var OPENAI_TOKEN_STORAGE = "90plus_openai_api_token";
     var OPENAI_VERIFIED_AT_KEY = "90plus_openai_verified_at";
     var USERS_STORAGE_KEY = "90plus_users_json";
+
+    function getOpenAISecret() {
+      try {
+        var k = localStorage.getItem(OPENAI_KEY_STORAGE);
+        var t = localStorage.getItem(OPENAI_TOKEN_STORAGE);
+        k = k ? String(k).trim() : "";
+        t = t ? String(t).trim() : "";
+        return k || t || "";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function wizardFetchPageTextAllOrigins(pageUrl) {
+      return fetch(
+        "https://api.allorigins.win/get?url=" + encodeURIComponent(pageUrl)
+      )
+        .then(function (r) {
+          if (!r.ok) throw new Error("allorigins");
+          return r.json();
+        })
+        .then(function (data) {
+          var html = data.contents;
+          if (!html || typeof html !== "string") throw new Error("no html");
+          var doc = new DOMParser().parseFromString(html, "text/html");
+          var root =
+            doc.querySelector("article") ||
+            doc.querySelector("main") ||
+            doc.querySelector('[role="main"]') ||
+            doc.body;
+          if (!root) throw new Error("no root");
+          var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+          if (text.length < 15) throw new Error("short");
+          return text;
+        });
+    }
+
+    function wizardFetchViaCorsProxy(pageUrl) {
+      return fetch("https://corsproxy.io/?" + encodeURIComponent(pageUrl))
+        .then(function (r) {
+          if (!r.ok) throw new Error("cors http");
+          return r.text();
+        })
+        .then(function (html) {
+          if (!html || typeof html !== "string" || html.length < 40) throw new Error("short html");
+          var doc = new DOMParser().parseFromString(html, "text/html");
+          var root =
+            doc.querySelector("article") ||
+            doc.querySelector("main") ||
+            doc.querySelector('[role="main"]') ||
+            doc.body;
+          if (!root) throw new Error("no root");
+          var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+          if (text.length < 15) throw new Error("short text");
+          return text;
+        });
+    }
+
+    /** يجرب Jina ثم AllOrigins ثم وكيل CORS؛ يعيد سلسلة فارغة إن فشل الكل. */
+    function wizardFetchRawPageBestEffort(pageUrl, signal) {
+      var clean = pageUrl.replace(/\s+/g, "");
+      var jinaUrl = "https://r.jina.ai/" + clean;
+      return fetch(jinaUrl, {
+        method: "GET",
+        signal: signal,
+        headers: {
+          Accept: "text/plain",
+          "X-Return-Format": "markdown"
+        }
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("jina");
+          return res.text();
+        })
+        .then(function (text) {
+          if (!text || !String(text).trim()) throw new Error("empty");
+          return text;
+        })
+        .catch(function () {
+          return wizardFetchPageTextAllOrigins(pageUrl);
+        })
+        .catch(function () {
+          return wizardFetchViaCorsProxy(pageUrl);
+        })
+        .catch(function () {
+          return "";
+        });
+    }
+
+    function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal) {
+      var truncated = String(rawContent || "").slice(0, 120000);
+      var userPart =
+        "الرابط:\n" +
+        pageUrl +
+        "\n\n---\n\nمحتوى الصفحة المستخرج آلياً (قد يكون فارغاً إن منعت المواقع الجلب أو الحظر الشبكي):\n\n" +
+        (truncated.trim() ||
+          "(لا يوجد نص مستخرج من الصفحة — إن لم يكن بإمكانك استخلاص معلومات موثوقة من الرابط وحده، اذكر ذلك بوضوح.)");
+
+      return fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        signal: signal,
+        headers: {
+          Authorization: "Bearer " + secret,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "أنت مساعد تحرير أخبار بالعربية. تستلم رابط صفحة ونصاً خاماً مستخرجاً منها (قد يكون فارغاً).\n" +
+                "المطلوب: تنسيق المخرجات بالعربية بوضوح تحت العناوين التالية:\n" +
+                "• عنوان الخبر\n• المصدر أو اسم الموقع إن أمكن\n• التاريخ إن وُجد في النص\n• ملخص موجز (حتى 3 جمل)\n• نص الخبر أو المحتوى الرئيسي بأطول صورة ممكنة من النص المعطى\n• أي وصف لصور أو نص بديل (alt) للصور ورد في المحتوى\n\n" +
+                "لا تخترع أسماء أشخاص أو أرقاماً أو اقتباسات غير موجودة في النص المعطى. إذا كان النص فارغاً أو شبه فارغ، اشرح أن المحتوى لم يُجلب من الصفحة ولا يمكن استخلاص الخبر بدقة من النص، واقترح على المستخدم لصق النص يدوياً أو تجربة رابط آخر."
+            },
+            { role: "user", content: userPart }
+          ],
+          temperature: 0.25,
+          max_tokens: 4096
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            var msg = (data && data.error && data.error.message) || res.statusText || "خطأ";
+            var err = new Error(msg);
+            err.status = res.status;
+            throw err;
+          }
+          var ch = data.choices && data.choices[0] && data.choices[0].message;
+          var txt = ch && ch.content ? String(ch.content).trim() : "";
+          if (!txt) throw new Error("استجابة فارغة من النموذج");
+          return txt;
+        });
+      });
+    }
 
     function getStoredUsers() {
       try {
@@ -2346,30 +2482,6 @@
       var btnMerge = $("wizBtnMerge");
       if (btnMerge) btnMerge.addEventListener("click", mergeOutput);
 
-      function fetchPageTextFallback(pageUrl) {
-        return fetch(
-          "https://api.allorigins.win/get?url=" + encodeURIComponent(pageUrl)
-        )
-          .then(function (r) {
-            if (!r.ok) throw new Error("allorigins");
-            return r.json();
-          })
-          .then(function (data) {
-            var html = data.contents;
-            if (!html || typeof html !== "string") throw new Error("no html");
-            var doc = new DOMParser().parseFromString(html, "text/html");
-            var root =
-              doc.querySelector("article") ||
-              doc.querySelector("main") ||
-              doc.querySelector('[role="main"]') ||
-              doc.body;
-            if (!root) throw new Error("no root");
-            var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
-            if (text.length < 15) throw new Error("short");
-            return text;
-          });
-      }
-
       var btnExtractLink = $("wizBtnExtractLink");
       var fbExtractLink = $("wizExtractLinkFeedback");
       if (btnExtractLink) {
@@ -2397,6 +2509,14 @@
             return;
           }
 
+          var secret = getOpenAISecret();
+          if (!secret) {
+            fbExtractLink.textContent =
+              "لا يوجد مفتاح OpenAI محفوظ. افتح الإعدادات ← ChatGPT / OpenAI API، الصق المفتاح ثم «حفظ المفاتيح» وأعد المحاولة.";
+            fbExtractLink.classList.add("err");
+            return;
+          }
+
           if (loadEl) loadEl.hidden = false;
           btnExtractLink.disabled = true;
           if (resultTa) resultTa.value = "";
@@ -2406,38 +2526,22 @@
           var ac = new AbortController();
           tmax = setTimeout(function () {
             ac.abort();
-          }, 90000);
+          }, 120000);
 
-          var jinaUrl = "https://r.jina.ai/" + u.replace(/\s+/g, "");
+          var rawBackup = "";
 
-          fetch(jinaUrl, {
-            method: "GET",
-            signal: ac.signal,
-            headers: {
-              Accept: "text/plain",
-              "X-Return-Format": "markdown"
-            }
-          })
-            .then(function (res) {
-              if (tmax) clearTimeout(tmax);
-              if (!res.ok) throw new Error("jina");
-              return res.text();
+          wizardFetchRawPageBestEffort(u, ac.signal)
+            .then(function (raw) {
+              rawBackup = raw || "";
+              return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
             })
-            .then(function (text) {
-              if (!text || !String(text).trim()) throw new Error("empty");
-              return text;
-            })
-            .catch(function () {
-              if (tmax) clearTimeout(tmax);
-              return fetchPageTextFallback(u);
-            })
-            .then(function (text) {
-              var out = String(text || "").trim();
-              if (!out) throw new Error("empty2");
+            .then(function (finalText) {
+              var out = String(finalText || "").trim();
+              if (!out) throw new Error("empty");
               if (resultTa) resultTa.value = out;
               if (resultWrap) resultWrap.hidden = false;
               fbExtractLink.textContent =
-                "تم استخراج محتوى الصفحة (نصاً والتسميات التوضيحية للصور إن وفرها الموقع). راجع النتيجة أدناه.";
+                "تم استخراج وتنسيق الخبر عبر OpenAI من الرابط والمحتوى المُجلب. راجع النتيجة أدناه.";
               fbExtractLink.classList.add("ok");
               try {
                 sessionStorage.setItem("90plus_wizard_source_url", u);
@@ -2445,14 +2549,45 @@
                 sessionStorage.setItem("90plus_wizard_extracted_text", out.slice(0, 1800000));
               } catch (e) {}
             })
-            .catch(function () {
-              if (resultTa) resultTa.value = "";
-              if (resultWrap) resultWrap.hidden = true;
-              fbExtractLink.textContent =
-                "تعذر استخراج المحتوى (الموقع يمنع الوصول، انقطاع الشبكة، أو مهلة زمنية). جرّب رابط مقال عام أو كرّر المحاولة.";
-              fbExtractLink.classList.add("err");
+            .catch(function (err) {
+              var st = err && err.status;
+              var apiHint = "";
+              if (st === 401) {
+                apiHint = "مفتاح OpenAI غير صالح أو منتهٍ — حدّثه من الإعدادات.";
+              } else if (st === 429) {
+                apiHint = "تجاوزت حد الطلبات في OpenAI — انتظر قليلاً ثم أعد المحاولة.";
+              } else if (st === 402 || st === 403) {
+                apiHint = "رفض OpenAI الطلب (الفوترة أو الصلاحيات). تحقق من حسابك.";
+              } else if (err && err.name === "AbortError") {
+                apiHint = "انتهت مهلة الطلب — أعد المحاولة أو تحقق من الشبكة.";
+              }
+              if (rawBackup && rawBackup.length > 80) {
+                if (resultTa) {
+                  resultTa.value =
+                    (apiHint ? apiHint + "\n\n---\n\n" : "") +
+                    "النص الخام المُجلب من الصفحة (دون معالجة OpenAI):\n\n" +
+                    rawBackup.slice(0, 150000);
+                }
+                if (resultWrap) resultWrap.hidden = false;
+                fbExtractLink.textContent =
+                  apiHint ||
+                  (err && err.message
+                    ? "تعذرت معالجة OpenAI: " + err.message + " — عُرض النص الخام أدناه."
+                    : "تعذرت معالجة OpenAI — عُرض النص الخام المُجلب إن وُجد.");
+                fbExtractLink.classList.add("err");
+              } else {
+                if (resultTa) resultTa.value = "";
+                if (resultWrap) resultWrap.hidden = true;
+                fbExtractLink.textContent =
+                  apiHint ||
+                  (err && err.message
+                    ? "تعذر الاستخراج: " + err.message
+                    : "تعذر جلب الصفحة أو الاتصال بـ OpenAI. تحقق من الرابط والمفتاح في الإعدادات والشبكة.");
+                fbExtractLink.classList.add("err");
+              }
             })
             .finally(function () {
+              if (tmax) clearTimeout(tmax);
               if (loadEl) loadEl.hidden = true;
               btnExtractLink.disabled = false;
             });
