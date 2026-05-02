@@ -457,9 +457,11 @@
   <nav class="navbar">
     <div class="navbar-logo">+90</div>
     <ul class="navbar-links" id="navLinks">
-      <li><a href="#home">الرئيسية</a></li>
       <li>
-        <button type="button" class="hero-tab is-active" data-tab="create" id="tab-create" aria-controls="panel-create" aria-pressed="true">إنشاء منشور</button>
+        <button type="button" class="hero-tab is-active" data-tab="home" id="tab-home" aria-controls="panel-home" aria-pressed="true">الرئيسية</button>
+      </li>
+      <li>
+        <button type="button" class="hero-tab" data-tab="create" id="tab-create" aria-controls="panel-create" aria-pressed="false">إنشاء منشور</button>
       </li>
       <li>
         <button type="button" class="hero-tab" data-tab="posts" id="tab-posts" aria-controls="panel-posts" aria-pressed="false">المنشورات</button>
@@ -470,8 +472,6 @@
       <li>
         <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">الإعدادات</button>
       </li>
-      <li><a href="#about">عن الموقع</a></li>
-      <li><a href="#contact">تواصل</a></li>
     </ul>
     <div class="navbar-end">
       <button type="button" class="nav-logout" id="navLogout" title="تسجيل الخروج">خروج</button>
@@ -487,7 +487,11 @@
     </div>
 
     <div class="tab-panels">
-      <div class="tab-panel active" id="panel-create" role="region" aria-labelledby="tab-create">
+      <div class="tab-panel active" id="panel-home" role="region" aria-labelledby="tab-home">
+        <h2>الرئيسية</h2>
+        <p>مرحباً بك في المنصة — اختر «إنشاء منشور» أو أي قسم من الشريط أعلاه.</p>
+      </div>
+      <div class="tab-panel" id="panel-create" role="region" aria-labelledby="tab-create">
         <h2>إنشاء منشور</h2>
         <p>منطقة إنشاء المنشور — أضف هنا الحقول والمحرر لاحقاً.</p>
       </div>
@@ -570,6 +574,7 @@
     (function initHeroTabs() {
       var tabs = document.querySelectorAll(".hero-tab");
       var panelByTab = {
+        home: document.getElementById("panel-home"),
         create: document.getElementById("panel-create"),
         posts: document.getElementById("panel-posts"),
         templates: document.getElementById("panel-templates"),
@@ -599,7 +604,7 @@
         });
       });
 
-      showTab("create");
+      showTab("home");
     })();
 
     document.getElementById("navLogout").addEventListener("click", function () {
@@ -618,11 +623,6 @@
       navLinks.classList.toggle("active");
     });
 
-    document.querySelectorAll(".navbar-links a").forEach((link) => {
-      link.addEventListener("click", () => {
-        navLinks.classList.remove("active");
-      });
-    });
   </script>
 
 </body>
