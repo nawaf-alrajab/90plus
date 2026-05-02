@@ -34,13 +34,22 @@
       box-shadow: 0 0 40px rgba(255, 195, 0, 0.15);
     }
 
-    .login-card h2 {
+    .login-card .login-brand {
       font-family: "Bebas Neue", sans-serif;
       font-size: 2.5rem;
       color: var(--bus-yellow);
       text-align: center;
       margin-bottom: 0.5rem;
       letter-spacing: 0.05em;
+      font-weight: normal;
+      line-height: 1.2;
+    }
+
+    .login-card .login-brand .brand-mark-img {
+      max-height: 3rem;
+      width: auto;
+      vertical-align: middle;
+      object-fit: contain;
     }
 
     .login-card p.sub {
@@ -192,6 +201,37 @@
       transition: all 0.3s ease;
     }
 
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+
+    .brand-mark.has-custom-logo .brand-mark-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .brand-mark.has-custom-logo {
+      position: relative;
+    }
+
+    .brand-mark .brand-mark-img {
+      display: none;
+    }
+
+    .brand-mark.has-custom-logo .brand-mark-img {
+      display: inline-block;
+    }
+
     .navbar-logo {
       font-family: "Bebas Neue", sans-serif;
       font-size: 2.2rem;
@@ -199,6 +239,13 @@
       letter-spacing: 0.05em;
       cursor: pointer;
       user-select: none;
+      min-height: 2.2rem;
+    }
+
+    .navbar-logo .brand-mark-img {
+      max-height: 2.5rem;
+      width: auto;
+      object-fit: contain;
     }
 
     .navbar-end {
@@ -320,6 +367,98 @@
       margin: 0;
     }
 
+    .hero-logo.has-custom-logo {
+      text-shadow: none;
+    }
+
+    .hero-logo .brand-mark-img {
+      max-height: clamp(5rem, 22vw, 18rem);
+      max-width: min(92vw, 560px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 60px rgba(255, 195, 0, 0.35));
+    }
+
+    .footer-brand .brand-mark-img {
+      max-height: 1.2em;
+      width: auto;
+      vertical-align: -0.15em;
+      object-fit: contain;
+    }
+
+    /* ===== رفع الشعار (تاب الإعدادات) ===== */
+    .settings-hint {
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.65);
+      margin-bottom: 1rem;
+    }
+
+    .logo-upload-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .logo-upload-label {
+      font-weight: 700;
+      color: var(--bus-yellow);
+    }
+
+    #logoFileInput {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 0.9rem;
+      color: var(--white);
+    }
+
+    .logo-preview-wrap {
+      margin: 1rem 0;
+      padding: 1rem;
+      border-radius: 10px;
+      border: 1px dashed rgba(255, 195, 0, 0.4);
+      background: rgba(0, 8, 20, 0.4);
+      text-align: center;
+    }
+
+    .logo-preview-wrap .preview-label {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 0.5rem;
+    }
+
+    #logoPreviewImg {
+      max-height: 120px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .logo-upload-error {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      min-height: 1.4em;
+      margin-bottom: 0.75rem;
+    }
+
+    .logo-remove-btn {
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.55rem 1.2rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 107, 0.6);
+      background: transparent;
+      color: #ff8f8f;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .logo-remove-btn:hover {
+      background: rgba(255, 107, 107, 0.12);
+    }
+
     .tab-panels {
       width: 100%;
       max-width: 720px;
@@ -431,7 +570,10 @@
   <!-- ===== شاشة تسجيل الدخول (تظهر قبل الموقع) ===== -->
   <div class="login-screen" id="loginScreen" aria-live="polite">
     <div class="login-card">
-      <h2>+90</h2>
+      <h2 class="login-brand brand-mark">
+        <span class="brand-mark-text">+90</span>
+        <img class="brand-mark-img" src="" alt="" decoding="async" hidden />
+      </h2>
       <p class="sub">سجّل الدخول للمتابعة</p>
       <form id="loginForm" novalidate>
         <div class="login-field">
@@ -455,7 +597,10 @@
   <div id="siteContent">
   <!-- ===== Navbar ===== -->
   <nav class="navbar">
-    <div class="navbar-logo">+90</div>
+    <div class="navbar-logo brand-mark">
+      <span class="brand-mark-text">+90</span>
+      <img class="brand-mark-img" src="" alt="" decoding="async" hidden />
+    </div>
     <ul class="navbar-links" id="navLinks">
       <li>
         <button type="button" class="hero-tab is-active" data-tab="home" id="tab-home" aria-controls="panel-home" aria-pressed="true">الرئيسية</button>
@@ -470,7 +615,7 @@
         <button type="button" class="hero-tab" data-tab="templates" id="tab-templates" aria-controls="panel-templates" aria-pressed="false">القوالب</button>
       </li>
       <li>
-        <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">الإعدادات</button>
+        <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">رفع الشعار</button>
       </li>
     </ul>
     <div class="navbar-end">
@@ -482,8 +627,11 @@
   <!-- ===== Hero: الشعار + محتوى التاب (التابات في شريط التنقل) ===== -->
   <section class="hero" id="home">
     <div class="hero-hub">
-      <!-- غيّر نص الشعار من هنا -->
-      <h1 class="hero-logo">+90</h1>
+      <!-- غيّر نص الشعار الافتراضي من هنا (يُستبدل بالصورة إن رفعت شعاراً) -->
+      <h1 class="hero-logo brand-mark">
+        <span class="brand-mark-text">+90</span>
+        <img class="brand-mark-img" src="" alt="شعار المنصة" decoding="async" hidden />
+      </h1>
     </div>
 
     <div class="tab-panels">
@@ -504,15 +652,25 @@
         <p>قوالب جاهزة للمنشورات.</p>
       </div>
       <div class="tab-panel" id="panel-settings" role="region" aria-labelledby="tab-settings">
-        <h2>الإعدادات</h2>
-        <p>تفضيلات التطبيق والحساب.</p>
+        <h2>رفع الشعار</h2>
+        <p class="settings-hint">ملف PNG فقط. بعد الرفع يُستبدل «+90» بالصورة في شريط التنقل، الصفحة الرئيسية، تسجيل الدخول، والتذييل.</p>
+        <div class="logo-upload-row">
+          <label for="logoFileInput" class="logo-upload-label">اختر ملف PNG</label>
+          <input type="file" id="logoFileInput" accept="image/png,.png" />
+        </div>
+        <div class="logo-preview-wrap" id="logoPreviewWrap" hidden>
+          <p class="preview-label">معاينة</p>
+          <img id="logoPreviewImg" alt="معاينة الشعار" />
+        </div>
+        <p class="logo-upload-error" id="logoUploadError" role="alert"></p>
+        <button type="button" class="logo-remove-btn" id="logoRemoveBtn">إزالة الشعار والعودة لـ +90</button>
       </div>
     </div>
   </section>
 
   <!-- ===== Footer ===== -->
   <footer class="footer">
-    <p>© 2026 <span>+90</span> - جميع الحقوق محفوظة</p>
+    <p>© 2026 <span class="footer-brand brand-mark"><span class="brand-mark-text">+90</span><img class="brand-mark-img" src="" alt="" decoding="async" hidden /></span> - جميع الحقوق محفوظة</p>
   </footer>
   </div>
 
@@ -525,6 +683,7 @@
     var AUTH_PASSWORD = "20189492";
     var SESSION_KEY = "90plus_session";
     var REMEMBER_KEY = "90plus_remember";
+    var LOGO_STORAGE_KEY = "90plus_custom_logo_png";
 
     function showApp() {
       document.documentElement.classList.add("pre-authed");
@@ -569,6 +728,88 @@
 
         showApp();
       });
+    })();
+
+    (function initBrandLogo() {
+      function applyDataUrl(dataUrl) {
+        document.querySelectorAll(".brand-mark").forEach(function (wrap) {
+          var imgEl = wrap.querySelector(".brand-mark-img");
+          if (!imgEl) return;
+          if (dataUrl) {
+            wrap.classList.add("has-custom-logo");
+            imgEl.src = dataUrl;
+            imgEl.hidden = false;
+          } else {
+            wrap.classList.remove("has-custom-logo");
+            imgEl.removeAttribute("src");
+            imgEl.hidden = true;
+          }
+        });
+        var previewWrap = document.getElementById("logoPreviewWrap");
+        var previewImg = document.getElementById("logoPreviewImg");
+        if (previewWrap && previewImg) {
+          if (dataUrl) {
+            previewImg.src = dataUrl;
+            previewWrap.hidden = false;
+          } else {
+            previewImg.removeAttribute("src");
+            previewWrap.hidden = true;
+          }
+        }
+      }
+
+      function loadFromStorage() {
+        try {
+          var data = localStorage.getItem(LOGO_STORAGE_KEY);
+          applyDataUrl(data || null);
+        } catch (e) {
+          applyDataUrl(null);
+        }
+      }
+
+      var fileInput = document.getElementById("logoFileInput");
+      var errEl = document.getElementById("logoUploadError");
+      var removeBtn = document.getElementById("logoRemoveBtn");
+
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          if (errEl) errEl.textContent = "";
+          var file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          if (file.type !== "image/png") {
+            if (errEl) errEl.textContent = "يُقبل ملف PNG فقط.";
+            fileInput.value = "";
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function () {
+            var dataUrl = reader.result;
+            try {
+              localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
+              applyDataUrl(dataUrl);
+            } catch (err) {
+              if (errEl) errEl.textContent = "تعذر الحفظ — جرّب صورة أصغر.";
+            }
+          };
+          reader.onerror = function () {
+            if (errEl) errEl.textContent = "تعذر قراءة الملف.";
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener("click", function () {
+          if (errEl) errEl.textContent = "";
+          try {
+            localStorage.removeItem(LOGO_STORAGE_KEY);
+          } catch (e) {}
+          applyDataUrl(null);
+          if (fileInput) fileInput.value = "";
+        });
+      }
+
+      loadFromStorage();
     })();
 
     (function initHeroTabs() {
