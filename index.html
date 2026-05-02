@@ -1357,7 +1357,7 @@
                   </div>
                 </div>
                 <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
-                  يتطلّب مفتاح OpenAI محفوظاً في الإعدادات. إذا جُلب نص كافٍ من الرابط يُنسَّق محلياً (gpt-4o-mini). إذا فشل الجلب من المتصفح يُفعَّل مسار «البحث في الويب» عبر OpenAI (gpt-4o + Responses API) لفتح الرابط واستخراج المحتوى — قد تقتضي حسابك تفعيل أدوات الويب أو فوترة إضافية. النص المرسوم داخل الصور فقط يحتاج OCR وليس مدمجاً هنا.
+                  يتطلّب مفتاح OpenAI محفوظاً في الإعدادات. روابط إنستغرام: يُحاول النظام جلب التعليق من صفحة embed العامة؛ لا يُستخدم «بحث الويب» في OpenAI لأنه لا يفتح إنستغرام بشكل موثوق وقد يُضلّل بنفي صحة الرابط. إذا ظهر النص ناقصاً انسخ التعليق من التطبيق والصقه في خطوة الترجمة. للروابط غير إنستغرام: إذا قلّ النص محلياً يُفعَّل مسار البحث في الويب (gpt-4o). النص داخل الصور فقط يحتاج OCR وليس مدمجاً هنا.
                 </p>
               </div>
 
@@ -1663,6 +1663,170 @@
         });
     }
 
+    function wizardDecodeBasicHtmlEntities(s) {
+      if (!s) return "";
+      var d = document.createElement("textarea");
+      d.innerHTML = s;
+      return d.value;
+    }
+
+    /** يتحقق من أن الرابط لإنستغرام (منشور / ريل / تلفزيون). */
+    function wizardInstagramPostInfo(pageUrl) {
+      try {
+        var u = new URL(pageUrl.trim().split("?")[0]);
+        var host = u.hostname.toLowerCase().replace(/^www\./, "");
+        if (host !== "instagram.com" && host !== "instagr.am") return null;
+        var path = u.pathname;
+        var m = path.match(/^\/(p|reel|tv)\/([^\/\?#]+)/);
+        if (!m) return null;
+        return { kind: m[1], code: m[2] };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    /**
+     * يستخرج نص التعليق/الوصف من HTML إنستغرام (embed أو الصفحة العادية).
+     */
+    function wizardExtractInstagramCaptionFromHtml(html) {
+      if (!html || typeof html !== "string") return "";
+      var candidates = [];
+      var ogd = html.match(
+        /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']/i
+      );
+      if (!ogd) ogd = html.match(/<meta[^>]+content=["']([^"']*)["'][^>]+property=["']og:description["']/i);
+      if (ogd && ogd[1]) candidates.push(wizardDecodeBasicHtmlEntities(ogd[1]));
+      var ogt = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i);
+      if (ogt && ogt[1]) candidates.push(wizardDecodeBasicHtmlEntities(ogt[1]));
+
+      var re = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+      var mm;
+      while ((mm = re.exec(html)) !== null) {
+        var t = mm[1]
+          .replace(/\\n/g, "\n")
+          .replace(/\\r/g, "")
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, "\\");
+        if (t.length > 20 && /[\s\u0600-\u06FF]/.test(t)) candidates.push(t);
+        else if (t.length > 45) candidates.push(t);
+      }
+
+      var best = "";
+      for (var i = 0; i < candidates.length; i++) {
+        var c = candidates[i].trim();
+        if (c.length > best.length) best = c;
+      }
+      if (best.length > 15) return best.replace(/\n{3,}/g, "\n\n").trim();
+
+      try {
+        var doc = new DOMParser().parseFromString(html, "text/html");
+        var body = doc.body;
+        if (body) {
+          var vis = (body.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+          if (vis.length > 40 && vis.indexOf("Instagram") !== 0) return vis;
+        }
+      } catch (e2) {}
+      return "";
+    }
+
+    /**
+     * إنستغرام يحجب معظم الجلب؛ صفحة /embed/ العامة قد تعرض التعليق لمنشور عام.
+     */
+    function wizardFetchInstagramCaptionBestEffort(pageUrl, signal) {
+      var info = wizardInstagramPostInfo(pageUrl);
+      if (!info) return Promise.resolve("");
+
+      var base = "https://www.instagram.com/";
+      var paths = [];
+      if (info.kind === "reel") {
+        paths.push(base + "reel/" + info.code + "/embed/");
+        paths.push(base + "p/" + info.code + "/embed/");
+      } else if (info.kind === "tv") {
+        paths.push(base + "tv/" + info.code + "/embed/");
+        paths.push(base + "p/" + info.code + "/embed/");
+      } else {
+        paths.push(base + "p/" + info.code + "/embed/");
+        paths.push(base + "reel/" + info.code + "/embed/");
+      }
+
+      function jinaRead(u) {
+        return fetch("https://r.jina.ai/" + u.replace(/\s+/g, ""), {
+          method: "GET",
+          signal: signal,
+          headers: {
+            Accept: "text/plain",
+            "X-Return-Format": "markdown"
+          }
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error("jina");
+            return res.text();
+          })
+          .catch(function () {
+            return "";
+          });
+      }
+
+      function allOriginsHtml(u) {
+        return fetch(
+          "https://api.allorigins.win/get?url=" + encodeURIComponent(u)
+        )
+          .then(function (r) {
+            if (!r.ok) throw new Error("ao");
+            return r.json();
+          })
+          .then(function (data) {
+            return data.contents && typeof data.contents === "string" ? data.contents : "";
+          })
+          .catch(function () {
+            return "";
+          });
+      }
+
+      var tasks = [];
+      for (var p = 0; p < paths.length; p++) {
+        (function (embedUrl) {
+          tasks.push(
+            jinaRead(embedUrl).then(function (md) {
+              var fromMd = wizardExtractInstagramCaptionFromHtml(md);
+              if (fromMd.length > 30) return fromMd;
+              if (md && md.length > 80) return md.trim();
+              return "";
+            })
+          );
+          tasks.push(
+            allOriginsHtml(embedUrl).then(function (html) {
+              if (!html) return "";
+              var cap = wizardExtractInstagramCaptionFromHtml(html);
+              return cap || "";
+            })
+          );
+          tasks.push(
+            fetch("https://corsproxy.io/?" + encodeURIComponent(embedUrl))
+              .then(function (r) {
+                return r.ok ? r.text() : "";
+              })
+              .then(function (html) {
+                if (!html) return "";
+                return wizardExtractInstagramCaptionFromHtml(html);
+              })
+              .catch(function () {
+                return "";
+              })
+          );
+        })(paths[p]);
+      }
+
+      return Promise.all(tasks).then(function (chunks) {
+        var best = "";
+        for (var i = 0; i < chunks.length; i++) {
+          var s = chunks[i] || "";
+          if (s.length > best.length) best = s;
+        }
+        return best.trim();
+      });
+    }
+
     /** يجلب بالتوازي من عدة مصادر ويأخذ أطول نص ناجح (Markdown أو نص عادي). */
     function wizardFetchRawPageBestEffort(pageUrl, signal) {
       var clean = pageUrl.replace(/\s+/g, "");
@@ -1704,7 +1868,19 @@
           var s = parts[i];
           if (typeof s === "string" && s.length > best.length) best = s;
         }
-        return best.trim();
+        best = best.trim();
+        if (!wizardInstagramPostInfo(clean)) {
+          return best;
+        }
+        return wizardFetchInstagramCaptionBestEffort(clean, signal).then(function (ig) {
+          ig = (ig || "").trim();
+          if (!ig) return best;
+          if (ig.length > best.length) return ig;
+          if (ig.length > 30 && best.length > 30 && ig !== best) {
+            return best + "\n\n---\n(واجهة embed — تعليق إنستغرام إن وُجد)\n" + ig;
+          }
+          return best || ig;
+        });
       });
     }
 
@@ -1807,12 +1983,32 @@
     function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal) {
       var truncated = String(rawContent || "").slice(0, 120000);
       var hasBody = truncated.trim().length >= 80;
+      var isIg = !!wizardInstagramPostInfo(pageUrl);
       var userPart =
         "الرابط:\n" +
         pageUrl +
         "\n\n---\n\nمحتوى الصفحة المستخرج آلياً:\n\n" +
         (truncated.trim() ||
           "(لا يوجد نص مستخرج بعد — لا يمكن استخلاص الخبر بدقة.)");
+
+      var systemFull =
+        "أنت مساعد تحرير أخبار بالعربية. أمامك نص خام مستخرج من صفحة ويب ورابطها.\n" +
+        "المطلوب: استخراج وتنسيق كل المعلومات الظاهرة في النص المعطى تحت العناوين:\n" +
+        "• عنوان الخبر\n• المصدر أو اسم الموقع\n• التاريخ إن وُجد\n• ملخص موجز (حتى 3 جمل)\n" +
+        "• نص الخبر كاملاً قدر الإمكان من النص المعطى (لا تختصر المحتوى الرئيسي)\n" +
+        "• أي وصف لصور أو نص بديل (alt) ورد في النص\n\n" +
+        "التزم بالنص المُعطى فقط؛ لا تخترع أسماء أو أرقاماً أو اقتباسات غير موجودة فيه." +
+        (isIg
+          ? "\n\nالمصدر إنستغرام: لا تقل إن الرابط غير صحيح أو أن المنشور محذوف ما دام النص أعلاه يحتوي محتوى؛ إن كان النص مجرد واجهة عامة بدون تعليق، اذكر ذلك بوضوح دون اتهام الرابط بالخطأ."
+          : "");
+
+      var systemEmptyIg =
+        "أنت مساعد بالعربية. الرابط يخص إنستغرام.\n" +
+        "إنستغرام يحجب استخراج التعليق والوسائط خارج التطبيق لمعظم المنشورات؛ ذلك لا يعني أن الرابط الذي أدخله المستخدم معطوباً أو أن المنشور محذوفاً.\n" +
+        "المطلوب: شرح موجز بلغة مهنية أن المحتوى لم يُجلب آلياً بسبب سياسات المنصة، واقتراح نسخ النص من التطبيق ولصقه في خطوة الترجمة، أو استخدام لقطة شاشة مع أداة OCR خارجية إن احتاج.";
+      var systemEmptyGeneric =
+        "أنت مساعد تحرير أخبار بالعربية. النص المستخرج من الصفحة فارغ تقريباً.\n" +
+        "اكتب فقرة قصيرة توضح أن المحتوى لم يُجلب، واقترح لصق النص يدوياً أو تجربة رابط آخر. لا تخترع خبراً.";
 
       return fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -1826,15 +2022,7 @@
           messages: [
             {
               role: "system",
-              content: hasBody
-                ? "أنت مساعد تحرير أخبار بالعربية. أمامك نص خام مستخرج من صفحة ويب ورابطها.\n" +
-                  "المطلوب: استخراج وتنسيق كل المعلومات الظاهرة في النص المعطى تحت العناوين:\n" +
-                  "• عنوان الخبر\n• المصدر أو اسم الموقع\n• التاريخ إن وُجد\n• ملخص موجز (حتى 3 جمل)\n" +
-                  "• نص الخبر كاملاً قدر الإمكان من النص المعطى (لا تختصر المحتوى الرئيسي)\n" +
-                  "• أي وصف لصور أو نص بديل (alt) ورد في النص\n\n" +
-                  "التزم بالنص المُعطى فقط؛ لا تخترع أسماء أو أرقاماً أو اقتباسات غير موجودة فيه."
-                : "أنت مساعد تحرير أخبار بالعربية. النص المستخرج من الصفحة فارغ تقريباً.\n" +
-                  "اكتب جملة واحدة توضح أن المحتوى لم يُجلب، واقترح لصق النص يدوياً أو تجربة رابط آخر. لا تخترع خبراً."
+              content: hasBody ? systemFull : isIg ? systemEmptyIg : systemEmptyGeneric
             },
             { role: "user", content: userPart }
           ],
@@ -2663,7 +2851,10 @@
           wizardFetchRawPageBestEffort(u, ac.signal)
             .then(function (raw) {
               rawBackup = raw || "";
-              if (rawBackup.length >= RAW_ENOUGH) {
+              var isInstagram = !!wizardInstagramPostInfo(u);
+              /** روابط إنستغرام لا تُفتح عبر أدوات بحث OpenAI بشكل موثوق وتُضلّل النموذج؛ نعتمد الجلب + Chat فقط. */
+              if (rawBackup.length >= RAW_ENOUGH || isInstagram) {
+                usedWebSearch = false;
                 return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
               }
               usedWebSearch = true;
@@ -2682,7 +2873,9 @@
               if (resultWrap) resultWrap.hidden = false;
               fbExtractLink.textContent = usedWebSearch
                 ? "تم استخراج الخبر عبر OpenAI مع الوصول إلى الويب (فتح الرابط وقراءة المحتوى). راجع النتيجة أدناه."
-                : "تم تنسيق المحتوى المُجلب من الرابط عبر OpenAI. راجع النتيجة أدناه.";
+                : wizardInstagramPostInfo(u)
+                  ? "تم تنسيق المحتوى المُستخرج من الرابط (إنستغرام). إن ظهر النص ناقصاً فالمنصة غالباً تحجب التعليق خارج التطبيق."
+                  : "تم تنسيق المحتوى المُجلب من الرابط عبر OpenAI. راجع النتيجة أدناه.";
               fbExtractLink.classList.add("ok");
               try {
                 sessionStorage.setItem("90plus_wizard_source_url", u);
