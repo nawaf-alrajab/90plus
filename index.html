@@ -892,7 +892,69 @@
       color: var(--white);
     }
 
+    .wiz-field-label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 0.45rem;
+      color: var(--white);
+    }
+
+    .wiz-type-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+    }
+
+    .wiz-type-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      cursor: pointer;
+      padding: 0.5rem 1.15rem;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 195, 0, 0.35);
+      background: rgba(0, 29, 61, 0.4);
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.85);
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    .wiz-type-option.is-selected {
+      border-color: var(--bus-yellow);
+      background: rgba(255, 195, 0, 0.15);
+      color: var(--bus-yellow);
+    }
+
+    .wiz-type-option input {
+      accent-color: var(--bus-yellow);
+      width: 1.05rem;
+      height: 1.05rem;
+    }
+
+    .wiz-source-block {
+      margin-top: 0.35rem;
+    }
+
+    .wiz-img-preview-wrap {
+      margin-top: 0.75rem;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 195, 0, 0.25);
+      max-height: 240px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .wiz-img-preview-wrap img {
+      display: block;
+      width: 100%;
+      max-height: 240px;
+      object-fit: contain;
+    }
+
     .wiz-field input[type="url"],
+    .wiz-field input[type="text"],
     .wiz-field input[type="file"],
     .wiz-field textarea,
     .wiz-field select {
@@ -1235,13 +1297,50 @@
           <div class="wizard-panes">
             <div class="wizard-pane is-active" data-step="0" role="group" aria-labelledby="wizTitle0">
               <h3 id="wizTitle0">إدراج خبر</h3>
+              <p class="hint" style="margin-bottom: 0.85rem">اختر نوع الإدخال: <strong>رابط</strong> مع بيانات الخبر، أو <strong>صورة</strong> للاعتماد على ملف صورة.</p>
+
               <div class="wiz-field">
-                <label for="wizLink">رابط المصدر</label>
-                <input type="url" id="wizLink" placeholder="https://..." autocomplete="off" dir="ltr" />
+                <span class="wiz-field-label" id="wizTypeLabel">نوع الإدخال</span>
+                <div class="wiz-type-toggle" role="radiogroup" aria-labelledby="wizTypeLabel">
+                  <label class="wiz-type-option is-selected" id="wizLabelTypeLink">
+                    <input type="radio" name="wizSourceType" value="link" id="wizSourceTypeLink" checked />
+                    <span>رابط</span>
+                  </label>
+                  <label class="wiz-type-option" id="wizLabelTypeImage">
+                    <input type="radio" name="wizSourceType" value="image" id="wizSourceTypeImage" />
+                    <span>صورة</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="wizBlockLink" class="wiz-source-block">
+                <div class="wiz-field">
+                  <label for="wizNewsTitle">عنوان الخبر</label>
+                  <input type="text" id="wizNewsTitle" autocomplete="off" dir="auto" placeholder="عنوان واضح للخبر" />
+                </div>
+                <div class="wiz-field">
+                  <label for="wizSourceName">اسم المصدر (اختياري)</label>
+                  <input type="text" id="wizSourceName" autocomplete="off" dir="auto" placeholder="مثال: موقع، وكالة، صحيفة…" />
+                </div>
+                <div class="wiz-field">
+                  <label for="wizLink">رابط المصدر</label>
+                  <input type="url" id="wizLink" placeholder="https://..." autocomplete="off" dir="ltr" />
+                </div>
                 <div class="wiz-field-actions">
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnExtractLink">استخراج</button>
                 </div>
                 <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
+              </div>
+
+              <div id="wizBlockImage" class="wiz-source-block" hidden>
+                <div class="wiz-field">
+                  <label for="wizSourceImageFile">صورة الخبر</label>
+                  <input type="file" id="wizSourceImageFile" accept="image/*" />
+                  <p class="hint">ارفع صورة واحدة للخبر أو المادة المراد العمل عليها.</p>
+                </div>
+                <div id="wizSourceImagePreviewWrap" class="wiz-img-preview-wrap" hidden>
+                  <img id="wizSourceImagePreview" alt="معاينة صورة الخبر" />
+                </div>
               </div>
             </div>
 
@@ -1959,6 +2058,28 @@
         if (errBox) errBox.textContent = msg || "";
       }
 
+      function getSourceType() {
+        var r = document.querySelector('#panel-create input[name="wizSourceType"]:checked');
+        return r && r.value === "image" ? "image" : "link";
+      }
+
+      function syncSourceTypeUI() {
+        var mode = getSourceType();
+        var blockLink = $("wizBlockLink");
+        var blockImg = $("wizBlockImage");
+        if (blockLink) blockLink.hidden = mode !== "link";
+        if (blockImg) blockImg.hidden = mode !== "image";
+        document.querySelectorAll("#panel-create .wiz-type-option").forEach(function (lab) {
+          var inp = lab.querySelector('input[name="wizSourceType"]');
+          lab.classList.toggle("is-selected", !!(inp && inp.checked));
+        });
+        var fb = $("wizExtractLinkFeedback");
+        if (fb) {
+          fb.textContent = "";
+          fb.classList.remove("ok", "err");
+        }
+      }
+
       function validateStep(i) {
         setErr("");
         if (okBox) {
@@ -1968,13 +2089,25 @@
         var t;
         switch (i) {
           case 0:
-            t = ($("wizLink").value || "").trim();
-            if (!t) {
-              setErr("يرجى إدراج رابط.");
-              return false;
+            if (getSourceType() === "link") {
+              t = ($("wizNewsTitle").value || "").trim();
+              if (t.length < 2) {
+                setErr("أدخل عنوان الخبر (حرفان على الأقل).");
+                return false;
+              }
+              t = ($("wizLink").value || "").trim();
+              if (!t) {
+                setErr("يرجى إدراج رابط المصدر.");
+                return false;
+              }
+              if (!/^https?:\/\//i.test(t)) {
+                setErr("الرابط يجب أن يبدأ بـ http:// أو https://");
+                return false;
+              }
+              return true;
             }
-            if (!/^https?:\/\//i.test(t)) {
-              setErr("الرابط يجب أن يبدأ بـ http:// أو https://");
+            if (!$("wizSourceImageFile").files || !$("wizSourceImageFile").files[0]) {
+              setErr("ارفع صورة الخبر للمتابعة.");
               return false;
             }
             return true;
@@ -2043,7 +2176,20 @@
       }
 
       function buildPreviewText() {
-        var link = ($("wizLink").value || "").trim();
+        var head = "";
+        if (getSourceType() === "link") {
+          head =
+            "نوع الإدخال: رابط\n" +
+            "عنوان الخبر: " +
+            ($("wizNewsTitle").value || "").trim() +
+            "\nاسم المصدر: " +
+            ($("wizSourceName").value || "").trim() +
+            "\nرابط المصدر: " +
+            ($("wizLink").value || "").trim();
+        } else {
+          var sf = $("wizSourceImageFile").files && $("wizSourceImageFile").files[0];
+          head = "نوع الإدخال: صورة\nملف صورة الخبر: " + (sf ? sf.name : "—");
+        }
         var tr = ($("wizTranslation").value || "").trim();
         var rw = ($("wizRewrite").value || "").trim();
         var tpl = $("wizTemplate");
@@ -2053,11 +2199,10 @@
         var ex = ($("wizExtractTemplate").value || "").trim();
         var cap = ($("wizCaption").value || "").trim();
         return (
-          "الرابط: " +
-          link +
-          "\n\nالقالب: " +
+          head +
+          "\n\n--- مسار المنشور ---\nالقالب: " +
           tplText +
-          "\n\nالصورة: " +
+          "\n\nصورة المنشور (الخطوة 6): " +
           imgName +
           "\n\nمقتطف الترجمة:\n" +
           tr.slice(0, 280) +
@@ -2077,14 +2222,26 @@
       function mergeOutput() {
         var blocks = [];
         blocks.push("=== منشور ===");
+        if (getSourceType() === "link") {
+          blocks.push("النوع: رابط");
+          blocks.push("عنوان الخبر: " + ($("wizNewsTitle").value || "").trim());
+          blocks.push("المصدر: " + ($("wizSourceName").value || "").trim());
+          blocks.push("رابط المصدر: " + ($("wizLink").value || "").trim());
+        } else {
+          var sf = $("wizSourceImageFile").files && $("wizSourceImageFile").files[0];
+          blocks.push("النوع: صورة");
+          blocks.push("صورة الخبر: " + (sf ? sf.name : ""));
+        }
         blocks.push("");
         blocks.push(($("wizCaption").value || "").trim());
         blocks.push("");
         blocks.push("--- النص ---");
         blocks.push(($("wizRewrite").value || "").trim());
         blocks.push("");
-        blocks.push("--- الرابط ---");
-        blocks.push(($("wizLink").value || "").trim());
+        if (getSourceType() === "link") {
+          blocks.push("--- الرابط ---");
+          blocks.push(($("wizLink").value || "").trim());
+        }
         $("wizFinalExport").value = blocks.join("\n");
         setErr("");
       }
@@ -2166,6 +2323,11 @@
         btnExtractLink.addEventListener("click", function () {
           if (!fbExtractLink) return;
           fbExtractLink.classList.remove("ok", "err");
+          if (getSourceType() !== "link") {
+            fbExtractLink.textContent = "زر الاستخراج يعمل عند اختيار نوع «رابط».";
+            fbExtractLink.classList.add("err");
+            return;
+          }
           var u = ($("wizLink").value || "").trim();
           if (!u) {
             fbExtractLink.textContent = "أدخل رابط المصدر أولاً.";
@@ -2179,12 +2341,46 @@
           }
           try {
             sessionStorage.setItem("90plus_wizard_source_url", u);
+            sessionStorage.setItem("90plus_wizard_source_type", "link");
+            sessionStorage.setItem(
+              "90plus_wizard_source_title",
+              ($("wizNewsTitle").value || "").trim()
+            );
           } catch (e) {}
           fbExtractLink.textContent =
-            "تم تجهيز الرابط للاستخراج. يمكنك لاحقاً ربط هذا الزر بخادم أو امتداد لجلب المحتوى من المصدر.";
+            "تم تجهيز الرابط والبيانات للاستخراج. يمكنك لاحقاً ربط هذا الزر بخادم أو امتداد لجلب المحتوى.";
           fbExtractLink.classList.add("ok");
         });
       }
+
+      document.querySelectorAll('#panel-create input[name="wizSourceType"]').forEach(function (inp) {
+        inp.addEventListener("change", syncSourceTypeUI);
+      });
+
+      var wizSrcImg = $("wizSourceImageFile");
+      if (wizSrcImg) {
+        wizSrcImg.addEventListener("change", function () {
+          var wrap = $("wizSourceImagePreviewWrap");
+          var prev = $("wizSourceImagePreview");
+          var f = this.files && this.files[0];
+          if (!f || !/^image\//.test(f.type)) {
+            if (wrap) wrap.hidden = true;
+            if (prev) prev.removeAttribute("src");
+            return;
+          }
+          var reader = new FileReader();
+          reader.onload = function () {
+            prev.src = reader.result;
+            wrap.hidden = false;
+          };
+          reader.readAsDataURL(f);
+          try {
+            sessionStorage.setItem("90plus_wizard_source_type", "image");
+          } catch (e2) {}
+        });
+      }
+
+      syncSourceTypeUI();
 
       $("wizardFinish").addEventListener("click", function () {
         if (!validateStep(9)) return;
