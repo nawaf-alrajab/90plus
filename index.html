@@ -1315,10 +1315,6 @@
 
               <div id="wizBlockLink" class="wiz-source-block">
                 <div class="wiz-field">
-                  <label for="wizNewsTitle">عنوان الخبر</label>
-                  <input type="text" id="wizNewsTitle" autocomplete="off" dir="auto" placeholder="عنوان واضح للخبر" />
-                </div>
-                <div class="wiz-field">
                   <label for="wizSourceName">اسم المصدر (اختياري)</label>
                   <input type="text" id="wizSourceName" autocomplete="off" dir="auto" placeholder="مثال: موقع، وكالة، صحيفة…" />
                 </div>
@@ -2090,11 +2086,6 @@
         switch (i) {
           case 0:
             if (getSourceType() === "link") {
-              t = ($("wizNewsTitle").value || "").trim();
-              if (t.length < 2) {
-                setErr("أدخل عنوان الخبر (حرفان على الأقل).");
-                return false;
-              }
               t = ($("wizLink").value || "").trim();
               if (!t) {
                 setErr("يرجى إدراج رابط المصدر.");
@@ -2180,9 +2171,7 @@
         if (getSourceType() === "link") {
           head =
             "نوع الإدخال: رابط\n" +
-            "عنوان الخبر: " +
-            ($("wizNewsTitle").value || "").trim() +
-            "\nاسم المصدر: " +
+            "اسم المصدر: " +
             ($("wizSourceName").value || "").trim() +
             "\nرابط المصدر: " +
             ($("wizLink").value || "").trim();
@@ -2224,7 +2213,6 @@
         blocks.push("=== منشور ===");
         if (getSourceType() === "link") {
           blocks.push("النوع: رابط");
-          blocks.push("عنوان الخبر: " + ($("wizNewsTitle").value || "").trim());
           blocks.push("المصدر: " + ($("wizSourceName").value || "").trim());
           blocks.push("رابط المصدر: " + ($("wizLink").value || "").trim());
         } else {
@@ -2342,10 +2330,6 @@
           try {
             sessionStorage.setItem("90plus_wizard_source_url", u);
             sessionStorage.setItem("90plus_wizard_source_type", "link");
-            sessionStorage.setItem(
-              "90plus_wizard_source_title",
-              ($("wizNewsTitle").value || "").trim()
-            );
           } catch (e) {}
           fbExtractLink.textContent =
             "تم تجهيز الرابط والبيانات للاستخراج. يمكنك لاحقاً ربط هذا الزر بخادم أو امتداد لجلب المحتوى.";
