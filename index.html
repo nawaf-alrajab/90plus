@@ -1271,6 +1271,9 @@
         <button type="button" class="hero-tab" data-tab="templates" id="tab-templates" aria-controls="panel-templates" aria-pressed="false">القوالب</button>
       </li>
       <li>
+        <button type="button" class="hero-tab" data-tab="sources" id="tab-sources" aria-controls="panel-sources" aria-pressed="false">المصادر</button>
+      </li>
+      <li>
         <button type="button" class="hero-tab" data-tab="settings" id="tab-settings" aria-controls="panel-settings" aria-pressed="false">الإعدادات</button>
       </li>
     </ul>
@@ -1478,6 +1481,10 @@
       <div class="tab-panel" id="panel-templates" role="region" aria-labelledby="tab-templates">
         <h2>القوالب</h2>
         <p>قوالب جاهزة للمنشورات.</p>
+      </div>
+      <div class="tab-panel" id="panel-sources" role="region" aria-labelledby="tab-sources" aria-hidden="true">
+        <h2>المصادر</h2>
+        <p>مصادر الأخبار والروابط المرجعية ستُعرض هنا.</p>
       </div>
       <div class="tab-panel" id="panel-settings" role="region" aria-labelledby="tab-settings">
         <h2>الإعدادات</h2>
@@ -2990,6 +2997,7 @@
         create: document.getElementById("panel-create"),
         posts: document.getElementById("panel-posts"),
         templates: document.getElementById("panel-templates"),
+        sources: document.getElementById("panel-sources"),
         settings: document.getElementById("panel-settings")
       };
 
