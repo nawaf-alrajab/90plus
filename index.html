@@ -1346,7 +1346,7 @@
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnExtractLink">استخراج</button>
                 </div>
                 <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
-                <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري جلب الصفحة ثم تنسيق الخبر عبر OpenAI… قد يستغرق ذلك نصف دقيقة أو أكثر.</p>
+                <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري جلب الصفحة ثم استخراج الخبر عبر OpenAI… إن ضاق المحتوى محلياً يُستخدم الوصول إلى الويب عبر OpenAI وقد يستغرق ذلك حتى دقيقتين.</p>
                 <div class="wiz-field" id="wizExtractResultWrap" hidden>
                   <label for="wizExtractResult">نتيجة الاستخراج</label>
                   <textarea id="wizExtractResult" readonly rows="14" dir="auto"></textarea>
@@ -1357,7 +1357,7 @@
                   </div>
                 </div>
                 <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
-                  يتطلّب الاستخراج مفتاح OpenAI محفوظاً في الإعدادات. يُجلب نص الصفحة من الرابط إن أمكن، ثم يُنسَّق عبر النموذج (gpt-4o-mini). النص داخل الصور كصورة فقط يحتاج OCR منفصلاً ليس مدمجاً هنا.
+                  يتطلّب مفتاح OpenAI محفوظاً في الإعدادات. إذا جُلب نص كافٍ من الرابط يُنسَّق محلياً (gpt-4o-mini). إذا فشل الجلب من المتصفح يُفعَّل مسار «البحث في الويب» عبر OpenAI (gpt-4o + Responses API) لفتح الرابط واستخراج المحتوى — قد تقتضي حسابك تفعيل أدوات الويب أو فوترة إضافية. النص المرسوم داخل الصور فقط يحتاج OCR وليس مدمجاً هنا.
                 </p>
               </div>
 
@@ -1606,6 +1606,25 @@
       }
     }
 
+    function wizardHtmlToVisibleText(html) {
+      if (!html || typeof html !== "string") throw new Error("no html");
+      var doc = new DOMParser().parseFromString(html, "text/html");
+      try {
+        doc.querySelectorAll("script, style, noscript, svg, iframe").forEach(function (n) {
+          n.remove();
+        });
+      } catch (e) {}
+      var root =
+        doc.querySelector("article") ||
+        doc.querySelector("main") ||
+        doc.querySelector('[role="main"]') ||
+        doc.body;
+      if (!root) throw new Error("no root");
+      var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
+      if (text.length < 12) throw new Error("short");
+      return text;
+    }
+
     function wizardFetchPageTextAllOrigins(pageUrl) {
       return fetch(
         "https://api.allorigins.win/get?url=" + encodeURIComponent(pageUrl)
@@ -1615,18 +1634,7 @@
           return r.json();
         })
         .then(function (data) {
-          var html = data.contents;
-          if (!html || typeof html !== "string") throw new Error("no html");
-          var doc = new DOMParser().parseFromString(html, "text/html");
-          var root =
-            doc.querySelector("article") ||
-            doc.querySelector("main") ||
-            doc.querySelector('[role="main"]') ||
-            doc.body;
-          if (!root) throw new Error("no root");
-          var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
-          if (text.length < 15) throw new Error("short");
-          return text;
+          return wizardHtmlToVisibleText(data.contents);
         });
     }
 
@@ -1637,25 +1645,30 @@
           return r.text();
         })
         .then(function (html) {
-          if (!html || typeof html !== "string" || html.length < 40) throw new Error("short html");
-          var doc = new DOMParser().parseFromString(html, "text/html");
-          var root =
-            doc.querySelector("article") ||
-            doc.querySelector("main") ||
-            doc.querySelector('[role="main"]') ||
-            doc.body;
-          if (!root) throw new Error("no root");
-          var text = (root.innerText || "").replace(/\n{3,}/g, "\n\n").trim();
-          if (text.length < 15) throw new Error("short text");
-          return text;
+          if (!html || html.length < 40) throw new Error("short html");
+          return wizardHtmlToVisibleText(html);
         });
     }
 
-    /** يجرب Jina ثم AllOrigins ثم وكيل CORS؛ يعيد سلسلة فارغة إن فشل الكل. */
+    function wizardFetchCodetabs(pageUrl) {
+      return fetch(
+        "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(pageUrl)
+      )
+        .then(function (r) {
+          if (!r.ok) throw new Error("codetabs");
+          return r.text();
+        })
+        .then(function (html) {
+          return wizardHtmlToVisibleText(html);
+        });
+    }
+
+    /** يجلب بالتوازي من عدة مصادر ويأخذ أطول نص ناجح (Markdown أو نص عادي). */
     function wizardFetchRawPageBestEffort(pageUrl, signal) {
       var clean = pageUrl.replace(/\s+/g, "");
       var jinaUrl = "https://r.jina.ai/" + clean;
-      return fetch(jinaUrl, {
+
+      var pJina = fetch(jinaUrl, {
         method: "GET",
         signal: signal,
         headers: {
@@ -1669,27 +1682,137 @@
         })
         .then(function (text) {
           if (!text || !String(text).trim()) throw new Error("empty");
-          return text;
-        })
-        .catch(function () {
-          return wizardFetchPageTextAllOrigins(pageUrl);
-        })
-        .catch(function () {
-          return wizardFetchViaCorsProxy(pageUrl);
+          return text.trim();
         })
         .catch(function () {
           return "";
         });
+
+      var pAll = wizardFetchPageTextAllOrigins(pageUrl).catch(function () {
+        return "";
+      });
+      var pCors = wizardFetchViaCorsProxy(pageUrl).catch(function () {
+        return "";
+      });
+      var pCode = wizardFetchCodetabs(pageUrl).catch(function () {
+        return "";
+      });
+
+      return Promise.all([pJina, pAll, pCors, pCode]).then(function (parts) {
+        var best = "";
+        for (var i = 0; i < parts.length; i++) {
+          var s = parts[i];
+          if (typeof s === "string" && s.length > best.length) best = s;
+        }
+        return best.trim();
+      });
     }
 
+    function wizardParseResponsesOutput(data) {
+      if (!data) return "";
+      if (typeof data.output_text === "string" && data.output_text.trim()) {
+        return data.output_text.trim();
+      }
+      var out = data.output;
+      if (!Array.isArray(out)) return "";
+      var chunks = [];
+      for (var i = 0; i < out.length; i++) {
+        var item = out[i];
+        if (!item || item.type !== "message" || !item.content) continue;
+        var arr = item.content;
+        if (!Array.isArray(arr)) continue;
+        for (var j = 0; j < arr.length; j++) {
+          var block = arr[j];
+          if (!block) continue;
+          if (block.type === "output_text" && block.text) chunks.push(block.text);
+          else if (typeof block.text === "string") chunks.push(block.text);
+        }
+      }
+      return chunks.join("\n\n").trim();
+    }
+
+    /**
+     * عند ضعف أو فراغ جلب المتصفح: Responses API + أداة البحث في الويب (مدمجة في OpenAI)
+     * لتصل النموذج إلى الصفحة واستخراج المحتوى.
+     */
+    function wizardOpenAIExtractViaWebSearch(secret, pageUrl, snippet, signal) {
+      var hint =
+        snippet && snippet.length > 40
+          ? "\n\n---\nنص مُجلب جزئياً من المتصفح (قد يكون ناقصاً):\n" + snippet.slice(0, 12000)
+          : "";
+
+      var inputText =
+        "المهمة: استخدم أداة البحث في الويب للوصول إلى الرابط التالي وقراءة صفحة الخبر أو المقال، ثم أخرج كل المعلومات المفيدة بالعربية.\n\n" +
+        "الرابط:\n" +
+        pageUrl +
+        hint +
+        "\n\nالمخرجات المطلوبة:\n" +
+        "• عنوان الخبر\n• المصدر / اسم الموقع\n• التاريخ والوقت إن ظهرا\n• ملخص في 2–4 جمل\n" +
+        "• النص الكامل للخبر (الفقرات الأساسية دون حذف مفرط)\n• أي نصوص بديلة للصور أو عناوين فرعية وردت في الصفحة\n\n" +
+        "اعتمد على محتوى الصفحة الفعلي بعد فتحه. لا تختلق اقتباسات أو أرقاماً غير واردة في المصدر.";
+
+      function postResponses(toolPayload) {
+        return fetch("https://api.openai.com/v1/responses", {
+          method: "POST",
+          signal: signal,
+          headers: {
+            Authorization: "Bearer " + secret,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            max_output_tokens: 8192,
+            tools: [toolPayload],
+            tool_choice: "auto",
+            include: ["web_search_call.action.sources"],
+            input: inputText
+          })
+        }).then(function (res) {
+          return res.json().then(function (data) {
+            if (!res.ok) {
+              var msg = (data && data.error && data.error.message) || res.statusText || "خطأ";
+              var err = new Error(msg);
+              err.status = res.status;
+              err.data = data;
+              throw err;
+            }
+            var txt = wizardParseResponsesOutput(data);
+            if (!txt) {
+              var errEmpty = new Error("لم يُرجع النموذج نصاً بعد البحث في الويب");
+              errEmpty.status = 502;
+              throw errEmpty;
+            }
+            return txt;
+          });
+        });
+      }
+
+      return postResponses({
+        type: "web_search_preview",
+        search_context_size: "high"
+      }).catch(function (e1) {
+        if (e1 && (e1.status === 400 || e1.status === 404)) {
+          return postResponses({ type: "web_search", search_context_size: "high" });
+        }
+        throw e1;
+      }).catch(function (e2) {
+        if (e2 && e2.status === 400) {
+          return postResponses({ type: "web_search_preview" });
+        }
+        throw e2;
+      });
+    }
+
+    /** تنسيق النص الخام المُجلب محلياً (كمية كافية). */
     function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal) {
       var truncated = String(rawContent || "").slice(0, 120000);
+      var hasBody = truncated.trim().length >= 80;
       var userPart =
         "الرابط:\n" +
         pageUrl +
-        "\n\n---\n\nمحتوى الصفحة المستخرج آلياً (قد يكون فارغاً إن منعت المواقع الجلب أو الحظر الشبكي):\n\n" +
+        "\n\n---\n\nمحتوى الصفحة المستخرج آلياً:\n\n" +
         (truncated.trim() ||
-          "(لا يوجد نص مستخرج من الصفحة — إن لم يكن بإمكانك استخلاص معلومات موثوقة من الرابط وحده، اذكر ذلك بوضوح.)");
+          "(لا يوجد نص مستخرج بعد — لا يمكن استخلاص الخبر بدقة.)");
 
       return fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -1703,11 +1826,15 @@
           messages: [
             {
               role: "system",
-              content:
-                "أنت مساعد تحرير أخبار بالعربية. تستلم رابط صفحة ونصاً خاماً مستخرجاً منها (قد يكون فارغاً).\n" +
-                "المطلوب: تنسيق المخرجات بالعربية بوضوح تحت العناوين التالية:\n" +
-                "• عنوان الخبر\n• المصدر أو اسم الموقع إن أمكن\n• التاريخ إن وُجد في النص\n• ملخص موجز (حتى 3 جمل)\n• نص الخبر أو المحتوى الرئيسي بأطول صورة ممكنة من النص المعطى\n• أي وصف لصور أو نص بديل (alt) للصور ورد في المحتوى\n\n" +
-                "لا تخترع أسماء أشخاص أو أرقاماً أو اقتباسات غير موجودة في النص المعطى. إذا كان النص فارغاً أو شبه فارغ، اشرح أن المحتوى لم يُجلب من الصفحة ولا يمكن استخلاص الخبر بدقة من النص، واقترح على المستخدم لصق النص يدوياً أو تجربة رابط آخر."
+              content: hasBody
+                ? "أنت مساعد تحرير أخبار بالعربية. أمامك نص خام مستخرج من صفحة ويب ورابطها.\n" +
+                  "المطلوب: استخراج وتنسيق كل المعلومات الظاهرة في النص المعطى تحت العناوين:\n" +
+                  "• عنوان الخبر\n• المصدر أو اسم الموقع\n• التاريخ إن وُجد\n• ملخص موجز (حتى 3 جمل)\n" +
+                  "• نص الخبر كاملاً قدر الإمكان من النص المعطى (لا تختصر المحتوى الرئيسي)\n" +
+                  "• أي وصف لصور أو نص بديل (alt) ورد في النص\n\n" +
+                  "التزم بالنص المُعطى فقط؛ لا تخترع أسماء أو أرقاماً أو اقتباسات غير موجودة فيه."
+                : "أنت مساعد تحرير أخبار بالعربية. النص المستخرج من الصفحة فارغ تقريباً.\n" +
+                  "اكتب جملة واحدة توضح أن المحتوى لم يُجلب، واقترح لصق النص يدوياً أو تجربة رابط آخر. لا تخترع خبراً."
             },
             { role: "user", content: userPart }
           ],
@@ -2526,22 +2653,36 @@
           var ac = new AbortController();
           tmax = setTimeout(function () {
             ac.abort();
-          }, 120000);
+          }, 180000);
 
           var rawBackup = "";
+          /** هل تم استخدام مسار Responses + البحث في الويب لأن الجلب المحلي كان ضعيفاً */
+          var usedWebSearch = false;
+          var RAW_ENOUGH = 400;
 
           wizardFetchRawPageBestEffort(u, ac.signal)
             .then(function (raw) {
               rawBackup = raw || "";
-              return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
+              if (rawBackup.length >= RAW_ENOUGH) {
+                return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
+              }
+              usedWebSearch = true;
+              return wizardOpenAIExtractViaWebSearch(secret, u, rawBackup, ac.signal).catch(function (wsErr) {
+                usedWebSearch = false;
+                if (rawBackup.length > 0) {
+                  return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
+                }
+                throw wsErr;
+              });
             })
             .then(function (finalText) {
               var out = String(finalText || "").trim();
               if (!out) throw new Error("empty");
               if (resultTa) resultTa.value = out;
               if (resultWrap) resultWrap.hidden = false;
-              fbExtractLink.textContent =
-                "تم استخراج وتنسيق الخبر عبر OpenAI من الرابط والمحتوى المُجلب. راجع النتيجة أدناه.";
+              fbExtractLink.textContent = usedWebSearch
+                ? "تم استخراج الخبر عبر OpenAI مع الوصول إلى الويب (فتح الرابط وقراءة المحتوى). راجع النتيجة أدناه."
+                : "تم تنسيق المحتوى المُجلب من الرابط عبر OpenAI. راجع النتيجة أدناه.";
               fbExtractLink.classList.add("ok");
               try {
                 sessionStorage.setItem("90plus_wizard_source_url", u);
@@ -2557,9 +2698,10 @@
               } else if (st === 429) {
                 apiHint = "تجاوزت حد الطلبات في OpenAI — انتظر قليلاً ثم أعد المحاولة.";
               } else if (st === 402 || st === 403) {
-                apiHint = "رفض OpenAI الطلب (الفوترة أو الصلاحيات). تحقق من حسابك.";
+                apiHint =
+                  "رفض OpenAI الطلب (الفوترة أو الصلاحيات أو عدم تفعيل أداة البحث في الويب للحساب). راجع لوحة OpenAI.";
               } else if (err && err.name === "AbortError") {
-                apiHint = "انتهت مهلة الطلب — أعد المحاولة أو تحقق من الشبكة.";
+                apiHint = "انتهت مهلة الطلب (3 دقائق) — أعد المحاولة أو تحقق من الشبكة.";
               }
               if (rawBackup && rawBackup.length > 80) {
                 if (resultTa) {
