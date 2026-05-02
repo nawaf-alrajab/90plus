@@ -8,6 +8,146 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
   <style>
+    /* ===== شاشة تسجيل الدخول ===== */
+    .login-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      background: linear-gradient(145deg, #000814 0%, #001428 50%, #000814 100%);
+    }
+
+    html.pre-authed .login-screen {
+      display: none;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2rem;
+      background: rgba(0, 29, 61, 0.85);
+      border: 2px solid var(--bus-yellow);
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(255, 195, 0, 0.15);
+    }
+
+    .login-card h2 {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 2.5rem;
+      color: var(--bus-yellow);
+      text-align: center;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .login-card p.sub {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-field {
+      margin-bottom: 1rem;
+    }
+
+    .login-field label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: var(--white);
+    }
+
+    .login-field input[type="email"],
+    .login-field input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid rgba(255, 195, 0, 0.35);
+      border-radius: 8px;
+      background: rgba(0, 8, 20, 0.6);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--bus-yellow);
+      box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.2);
+    }
+
+    .login-remember {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.95rem;
+    }
+
+    .login-remember input {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--bus-yellow);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.85rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--bus-yellow);
+      color: var(--ink-black);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(255, 195, 0, 0.35);
+    }
+
+    .login-error {
+      color: #ff6b6b;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 1rem;
+      min-height: 1.4em;
+    }
+
+    #siteContent {
+      display: none;
+    }
+
+    html.pre-authed #siteContent {
+      display: block;
+    }
+
+    .nav-logout {
+      background: transparent;
+      border: 1px solid var(--bus-yellow);
+      color: var(--bus-yellow);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+
+    .nav-logout:hover {
+      background: rgba(255, 195, 0, 0.12);
+    }
+
     /* ===== Variables ===== */
     :root {
       --ink-black: #000814;
@@ -59,6 +199,12 @@
       letter-spacing: 0.05em;
       cursor: pointer;
       user-select: none;
+    }
+
+    .navbar-end {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
 
     .navbar-links {
@@ -169,9 +315,47 @@
       }
     }
   </style>
+  <!-- تجنّب ومضة شاشة الدخول إذا كانت الجلسة أو «تذكرني» فعّالة -->
+  <script>
+    (function () {
+      try {
+        if (
+          sessionStorage.getItem("90plus_session") === "1" ||
+          localStorage.getItem("90plus_remember") === "1"
+        ) {
+          document.documentElement.classList.add("pre-authed");
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
 
+  <!-- ===== شاشة تسجيل الدخول (تظهر قبل الموقع) ===== -->
+  <div class="login-screen" id="loginScreen" aria-live="polite">
+    <div class="login-card">
+      <h2>+90</h2>
+      <p class="sub">سجّل الدخول للمتابعة</p>
+      <form id="loginForm" novalidate>
+        <div class="login-field">
+          <label for="loginEmail">البريد الإلكتروني</label>
+          <input type="email" id="loginEmail" name="email" autocomplete="username" required dir="ltr" />
+        </div>
+        <div class="login-field">
+          <label for="loginPassword">كلمة المرور</label>
+          <input type="password" id="loginPassword" name="password" autocomplete="current-password" required />
+        </div>
+        <label class="login-remember">
+          <input type="checkbox" id="loginRemember" name="remember" />
+          <span>تذكرني على هذا الجهاز</span>
+        </label>
+        <button type="submit" class="login-btn">دخول</button>
+        <p class="login-error" id="loginError" role="alert"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="siteContent">
   <!-- ===== Navbar ===== -->
   <nav class="navbar">
     <div class="navbar-logo">+90</div>
@@ -180,7 +364,10 @@
       <li><a href="#about">عن الموقع</a></li>
       <li><a href="#contact">تواصل</a></li>
     </ul>
-    <button class="menu-toggle" id="menuToggle">☰</button>
+    <div class="navbar-end">
+      <button type="button" class="nav-logout" id="navLogout" title="تسجيل الخروج">خروج</button>
+      <button class="menu-toggle" id="menuToggle" type="button" aria-label="القائمة">☰</button>
+    </div>
   </nav>
 
   <!-- ===== Hero Section ===== -->
@@ -192,19 +379,82 @@
   <footer class="footer">
     <p>© 2026 <span>+90</span> - جميع الحقوق محفوظة</p>
   </footer>
+  </div>
 
   <!-- ===== JavaScript ===== -->
   <script>
-    const menuToggle = document.getElementById('menuToggle');
-    const navLinks = document.getElementById('navLinks');
+    /* ——— بيانات الدخول المسموح بها (غيّر من هنا فقط) ———
+       تحذير: الموقع ثابت (HTML) — لا تضع كلمة مرور حساسة هنا؛ أي مستخدم يقدر يقرأ الكود.
+       للحماية الحقيقية لاحقاً استخدم خادماً ومصادقة حقيقية. */
+    var AUTH_EMAIL = "nawafn.alrajab@gmail.com";
+    var AUTH_PASSWORD = "20189492";
+    var SESSION_KEY = "90plus_session";
+    var REMEMBER_KEY = "90plus_remember";
 
-    menuToggle.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
+    function showApp() {
+      document.documentElement.classList.add("pre-authed");
+    }
+
+    function hideApp() {
+      document.documentElement.classList.remove("pre-authed");
+      try {
+        sessionStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem(REMEMBER_KEY);
+      } catch (e) {}
+    }
+
+    (function initLogin() {
+      var form = document.getElementById("loginForm");
+      var errEl = document.getElementById("loginError");
+      if (!form) return;
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        errEl.textContent = "";
+        var email = (document.getElementById("loginEmail").value || "").trim().toLowerCase();
+        var pass = document.getElementById("loginPassword").value || "";
+        var remember = document.getElementById("loginRemember").checked;
+
+        if (email !== AUTH_EMAIL.toLowerCase() || pass !== AUTH_PASSWORD) {
+          errEl.textContent = "البريد أو كلمة المرور غير صحيحة.";
+          return;
+        }
+
+        try {
+          sessionStorage.setItem(SESSION_KEY, "1");
+          if (remember) {
+            localStorage.setItem(REMEMBER_KEY, "1");
+          } else {
+            localStorage.removeItem(REMEMBER_KEY);
+          }
+        } catch (err) {
+          errEl.textContent = "تعذر حفظ الجلسة في هذا المتصفح.";
+          return;
+        }
+
+        showApp();
+      });
+    })();
+
+    document.getElementById("navLogout").addEventListener("click", function () {
+      hideApp();
+      var pwd = document.getElementById("loginPassword");
+      var em = document.getElementById("loginEmail");
+      if (pwd) pwd.value = "";
+      document.getElementById("loginError").textContent = "";
+      if (em) em.focus();
     });
 
-    document.querySelectorAll('.navbar-links a').forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.classList.remove('active');
+    const menuToggle = document.getElementById("menuToggle");
+    const navLinks = document.getElementById("navLinks");
+
+    menuToggle.addEventListener("click", () => {
+      navLinks.classList.toggle("active");
+    });
+
+    document.querySelectorAll(".navbar-links a").forEach((link) => {
+      link.addEventListener("click", () => {
+        navLinks.classList.remove("active");
       });
     });
   </script>
