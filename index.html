@@ -1769,8 +1769,7 @@
       <div class="tab-panel" id="panel-templates" role="region" aria-labelledby="tab-templates">
         <h2>القوالب</h2>
         <p class="hint" style="margin-bottom: 1.25rem">
-          عرّف قالباً باسم واضح، ثم ألحق به <strong>تصميماً نصياً جاهزاً</strong> تملأ فيه المواضع بالمتغيرات بين
-          <code dir="ltr">{{اسم_المتغير}}</code>. يُحفظ القالب والمرفق في المتصفح ونسخة الملفات في IndexedDB حتى
+          أدخل اسماً للقالب، ثم ملاحظات و/أو مرفقاً — يُحفظ النص في المتصفح والملف في IndexedDB حتى
           <strong>تحذفه</strong> يدوياً من القائمة أدناه.
         </p>
 
@@ -1785,27 +1784,13 @@
                 name="name"
                 maxlength="100"
                 autocomplete="off"
-                placeholder="يظهر في القائمة ويعرّف التصميم — مثال: خبر عاجل قصير"
+                placeholder="يظهر في القائمة — مثال: خبر عاجل قصير"
                 dir="auto"
               />
             </div>
             <div class="settings-field">
-              <label for="newTemplateBody">تصميم القالب (نص جاهز + متغيرات)</label>
-              <textarea
-                id="newTemplateBody"
-                name="body"
-                rows="10"
-                placeholder="مثال:&#10;🔴 {{عنوان}}&#10;&#10;{{نص_الخبر}}&#10;&#10;📎 المصدر: {{المصدر}}"
-                dir="auto"
-              ></textarea>
-              <p class="hint" style="margin-top: 0.4rem; font-size: 0.78rem">
-                المتغيرات بصيغة <code dir="ltr">{{المفتاح}}</code> — تُستبدل لاحقاً بالقيم (مثل
-                <code dir="ltr">{{عنوان}}</code>، <code dir="ltr">{{النص}}</code>). يمكن تكرار نفس المتغير عدة مرات.
-              </p>
-            </div>
-            <div class="settings-field">
-              <label for="newTemplateNotes">ملاحظات لك فقط (اختياري)</label>
-              <textarea id="newTemplateNotes" name="notes" rows="2" placeholder="تذكير داخلي لا يظهر في المنشور…" dir="auto"></textarea>
+              <label for="newTemplateNotes">ملاحظات / وصف (اختياري)</label>
+              <textarea id="newTemplateNotes" name="notes" rows="4" placeholder="وصف داخلي أو تذكير…" dir="auto"></textarea>
             </div>
             <div class="settings-field templates-file-field">
               <label for="newTemplateFile">مرفق التصميم (اختياري)</label>
@@ -1828,7 +1813,7 @@
         <section class="templates-section" style="margin-top: 1.75rem">
           <h3>قوالب مدمجة</h3>
           <p class="hint" style="margin-bottom: 0.65rem; font-size: 0.82rem">
-            تصنيفات عامة للمسار؛ ليست نصوصاً جاهزة — قوالبك أعلاه تحمل التصميم والمتغيرات والمرفق.
+            تصنيفات عامة للمسار؛ ليست نصوصاً جاهزة — قوالبك أعلاه تضم اسماً ووصفاً و/أو مرفقاً.
           </p>
           <ul class="templates-list templates-list--static" id="templatesBuiltinList" aria-label="قوالب مدمجة"></ul>
         </section>
@@ -3437,16 +3422,19 @@
 
       function normalizeTemplateRecord(x) {
         if (!x || typeof x !== "object") return null;
+        var id = x.id && String(x.id);
+        if (!id) return null;
         var name = x.name && String(x.name).trim();
-        if (!name || name.length < 1) return null;
-        var body = (x.body && String(x.body).trim()) || "";
-        if (!body && x.notes) body = String(x.notes).trim();
-        if (body.length < 3) return null;
+        if (!name || name.length < 2) return null;
+        var body = x.body != null ? String(x.body).trim() : "";
+        var notes = x.notes != null ? String(x.notes).trim() : "";
+        var hasAtt = !!(x.attachmentMeta && x.attachmentMeta.fileName);
+        if (!body.length && !notes.length && !hasAtt) return null;
         return {
-          id: String(x.id),
+          id: id,
           name: name,
           body: body,
-          notes: x.notes ? String(x.notes).trim() : "",
+          notes: notes,
           attachmentMeta: x.attachmentMeta || null
         };
       }
@@ -3552,24 +3540,26 @@
           bodyWrap.appendChild(title);
 
           var vars = extractTemplateVariables(t.body);
-          if (vars.length) {
+          if (t.body && vars.length) {
             var vline = document.createElement("span");
             vline.className = "tpl-vars";
-            vline.textContent = "المتغيرات: " + vars.join("، ");
+            vline.textContent = "المتغيرات (نص قديم): " + vars.join("، ");
             bodyWrap.appendChild(vline);
           }
 
-          var preview = document.createElement("div");
-          preview.className = "tpl-design-preview";
-          preview.textContent =
-            t.body.length > 900 ? t.body.slice(0, 900) + "…" : t.body;
-          bodyWrap.appendChild(preview);
+          if (t.body && String(t.body).trim()) {
+            var preview = document.createElement("div");
+            preview.className = "tpl-design-preview";
+            var tb = String(t.body);
+            preview.textContent = tb.length > 900 ? tb.slice(0, 900) + "…" : tb;
+            bodyWrap.appendChild(preview);
+          }
 
           var notes = t.notes && String(t.notes).trim();
           if (notes) {
             var n = document.createElement("span");
             n.className = "tpl-notes";
-            n.textContent = "ملاحظة داخلية: " + notes;
+            n.textContent = "الوصف / الملاحظات: " + notes;
             bodyWrap.appendChild(n);
           }
 
@@ -3651,7 +3641,10 @@
             var o = document.createElement("option");
             o.value = t.id;
             o.textContent = t.name.trim();
-            var hint = (t.body && String(t.body).trim()) || "";
+            var hint =
+              (t.body && String(t.body).trim()) ||
+              (t.notes && String(t.notes).trim()) ||
+              "";
             if (hint.length > 100) hint = hint.slice(0, 100) + "…";
             if (hint) o.setAttribute("title", hint);
             og2.appendChild(o);
@@ -3690,41 +3683,35 @@
         form.addEventListener("submit", function (e) {
           e.preventDefault();
           var nameIn = document.getElementById("newTemplateName");
-          var bodyIn = document.getElementById("newTemplateBody");
           var notesIn = document.getElementById("newTemplateNotes");
           var fileIn = document.getElementById("newTemplateFile");
           var name = nameIn ? String(nameIn.value || "").trim() : "";
-          var body = bodyIn ? String(bodyIn.value || "").trim() : "";
           var notes = notesIn ? String(notesIn.value || "").trim() : "";
           if (name.length < 2) {
             setTemplatesFeedback("أدخل اسماً للقالب (حرفان على الأقل).", "err");
             return;
           }
-          if (body.length < 3) {
-            setTemplatesFeedback(
-              "أدخل تصميماً نصياً (3 أحرف فأكثر) واستخدم {{متغير}} للمواضع التي تُملأ لاحقاً.",
-              "err"
-            );
+          var file = fileIn && fileIn.files && fileIn.files[0] ? fileIn.files[0] : null;
+          if (!notes.length && !file) {
+            setTemplatesFeedback("أضف ملاحظاتاً أو مرفقاً (أو الاثنين).", "err");
             return;
           }
-          var file = fileIn && fileIn.files && fileIn.files[0] ? fileIn.files[0] : null;
           if (file && file.size > TEMPLATE_FILE_MAX_BYTES) {
             setTemplatesFeedback("حجم الملف يتجاوز 5 ميجابايت.", "err");
             return;
           }
           var id = genTemplateId();
           var customs = loadCustomTemplates();
-          var entry = { id: id, name: name, body: body, notes: notes };
+          var entry = { id: id, name: name, body: "", notes: notes };
 
           function finishSave() {
             customs.push(entry);
             saveCustomTemplates(customs);
             if (nameIn) nameIn.value = "";
-            if (bodyIn) bodyIn.value = "";
             if (notesIn) notesIn.value = "";
             if (fileIn) fileIn.value = "";
             setTemplatesFeedback(
-              "تم حفظ القالب نصاً ومرفقاً (إن وُجد) في هذا المتصفح حتى تحذفه.",
+              "تم حفظ القالب ومرفقه (إن وُجد) في هذا المتصفح حتى تحذفه.",
               "ok"
             );
             refreshTemplatesPanel();
