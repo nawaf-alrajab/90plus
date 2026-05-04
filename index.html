@@ -1033,18 +1033,104 @@
       }
     }
 
-    #wizExtractResult {
-      min-height: 220px;
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .wiz-extract-heading-label {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .wiz-extract-layout {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 1rem 1.25rem;
+      direction: rtl;
+    }
+
+    .wiz-extract-main {
+      flex: 1 1 min(100%, 320px);
+      min-width: 0;
+    }
+
+    .wiz-extract-aside {
+      flex: 0 1 280px;
+      align-self: stretch;
+    }
+
+    .wiz-extract-block {
+      margin-bottom: 1rem;
+    }
+
+    .wiz-extract-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .wiz-extract-section-title {
+      margin: 0 0 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--bus-yellow, #ffc300);
+      opacity: 0.95;
+    }
+
+    .wiz-extract-body {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--radius-sm, 8px);
+      border: 1px solid rgba(212, 175, 55, 0.28);
+      background: rgba(0, 0, 0, 0.28);
+      color: rgba(255, 255, 255, 0.92);
+      min-height: 2.5rem;
+    }
+
+    #wizExtractErrorFallback {
+      min-height: 180px;
       font-size: 0.88rem;
       line-height: 1.55;
+      width: 100%;
+      margin-top: 0;
+      box-sizing: border-box;
+    }
+
+    #wizExtractResult {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
     }
 
     .wiz-extract-image-wrap {
-      margin-top: 0.85rem;
+      margin-top: 0;
       padding: 0.75rem;
       border-radius: var(--radius-sm, 8px);
       border: 1px solid rgba(212, 175, 55, 0.35);
       background: rgba(0, 0, 0, 0.25);
+      height: fit-content;
+      position: sticky;
+      top: 0.5rem;
     }
 
     .wiz-extract-image-wrap p {
@@ -1055,9 +1141,11 @@
 
     .wiz-extract-image-wrap img {
       display: block;
-      max-width: min(100%, 420px);
+      width: 100%;
+      max-width: 320px;
       height: auto;
       border-radius: 6px;
+      margin-inline: auto;
     }
 
     .wiz-check {
@@ -1378,12 +1466,41 @@
                 <p class="wiz-extract-feedback" id="wizExtractLinkFeedback" role="status" aria-live="polite"></p>
                 <p class="wiz-extract-loading" id="wizExtractLoading" hidden>جاري جلب الصفحة ثم استخراج الخبر عبر OpenAI… إن ضاق المحتوى محلياً يُستخدم الوصول إلى الويب عبر OpenAI وقد يستغرق ذلك حتى دقيقتين.</p>
                 <div class="wiz-field" id="wizExtractResultWrap" hidden>
-                  <label for="wizExtractResult">نتيجة الاستخراج</label>
-                  <textarea id="wizExtractResult" readonly rows="14" dir="auto"></textarea>
-                  <div id="wizExtractImageWrap" class="wiz-extract-image-wrap" hidden>
-                    <p>صورة المنشور (من الرابط)</p>
-                    <img id="wizExtractImage" alt="" width="0" height="0" loading="lazy" referrerpolicy="no-referrer" />
+                  <span class="wiz-extract-heading-label">نتيجة الاستخراج</span>
+                  <div class="wiz-extract-layout">
+                    <div class="wiz-extract-main">
+                      <div id="wizExtractStructured">
+                        <section class="wiz-extract-block">
+                          <h4 class="wiz-extract-section-title">مصدر الخبر</h4>
+                          <div id="wizExtractSource" class="wiz-extract-body" dir="auto"></div>
+                        </section>
+                        <section class="wiz-extract-block">
+                          <h4 class="wiz-extract-section-title">النص الأصلي</h4>
+                          <div id="wizExtractOriginal" class="wiz-extract-body" dir="auto"></div>
+                        </section>
+                        <section class="wiz-extract-block">
+                          <h4 class="wiz-extract-section-title">الترجمة</h4>
+                          <div id="wizExtractTranslated" class="wiz-extract-body" dir="rtl"></div>
+                        </section>
+                      </div>
+                      <label class="visually-hidden" for="wizExtractErrorFallback">نص احتياطي عند فشل التنسيق</label>
+                      <textarea
+                        id="wizExtractErrorFallback"
+                        readonly
+                        rows="12"
+                        dir="auto"
+                        hidden
+                        aria-label="النص الخام عند تعذر المعالجة"
+                      ></textarea>
+                    </div>
+                    <aside class="wiz-extract-aside">
+                      <div id="wizExtractImageWrap" class="wiz-extract-image-wrap" hidden>
+                        <p>صورة المنشور</p>
+                        <img id="wizExtractImage" alt="" width="0" height="0" loading="lazy" referrerpolicy="no-referrer" />
+                      </div>
+                    </aside>
                   </div>
+                  <textarea id="wizExtractResult" readonly dir="auto" aria-hidden="true" tabindex="-1"></textarea>
                   <div class="wiz-field-actions">
                     <button type="button" class="wizard-btn wizard-btn--merge" id="wizBtnCopyExtractToTranslation">
                       نسخ النص إلى خطوة الترجمة
@@ -1391,7 +1508,7 @@
                   </div>
                 </div>
                 <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
-                  النتيجة تُنسَّق كالتالي: مصدر الخبر، ثم النص الأصلي من وصف المنشور، ثم الترجمة العربية، ثم رابط الصورة؛ ويُعرض معاين للصورة أسفل المربع إن وُجد الرابط. يُفضّل /p/ لإنستغرام. المفتاح من الإعدادات. إن ضاق الجلب يُفعَّل بحث الويب. المنشورات الخاصة قد لا تُعرض. النص داخل الصورة يحتاج OCR.
+                  تُعرض النتيجة: المصدر، ثم النص الأصلي، ثم الترجمة، مع معاينة الصورة بجانب النص عند توفرها — دون إظهار رابط المنشور أو الإعجابات في المربعات. يُفضّل /p/ لإنستغرام. المفتاح من الإعدادات. إن ضاق الجلب يُفعَّل بحث الويب. المنشورات الخاصة قد لا تُعرض. النص داخل الصورة يحتاج OCR.
                 </p>
               </div>
 
@@ -2280,6 +2397,93 @@
       return chunks.join("\n\n").trim();
     }
 
+    function wizardStripJsonFences(s) {
+      s = String(s || "").trim();
+      var m = s.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/im);
+      if (m) return m[1].trim();
+      return s;
+    }
+
+    /** يستخرج أول كائن JSON من الرد إن أحاطه النموذج بنص زائد */
+    function wizardCoerceModelOutputToJsonString(s) {
+      s = String(s || "").trim();
+      var st = wizardStripJsonFences(s);
+      try {
+        JSON.parse(st);
+        return st;
+      } catch (e0) {}
+      var i = s.indexOf("{");
+      var j = s.lastIndexOf("}");
+      if (i >= 0 && j > i) {
+        var sub = s.slice(i, j + 1);
+        try {
+          JSON.parse(sub);
+          return sub;
+        } catch (e1) {}
+      }
+      return s;
+    }
+
+    /** تجميع نص عادي للتخزين والحقل المخفي */
+    function wizardFormatExtractPlainText(parsed) {
+      parsed = parsed || {};
+      var lines = [];
+      if (parsed.source) lines.push("مصدر الخبر:\n" + parsed.source);
+      if (parsed.original) lines.push("النص الأصلي من المنشور:\n" + parsed.original);
+      if (parsed.translation) lines.push("الترجمة إلى العربية:\n" + parsed.translation);
+      return lines.join("\n\n").trim();
+    }
+
+    /**
+     * يحلل مخرجات JSON أو النسخة النصية القديمة.
+     */
+    function wizardParseExtractResult(text) {
+      var raw = String(text || "").trim();
+      var stripped = wizardStripJsonFences(raw);
+      try {
+        var o = JSON.parse(stripped);
+        if (o && typeof o === "object" && !Array.isArray(o)) {
+          return {
+            source: String(o.source != null ? o.source : "").trim(),
+            original: String(o.original != null ? o.original : "").trim(),
+            translation: String(o.translation != null ? o.translation : "").trim()
+          };
+        }
+      } catch (e1) {}
+      var full = raw;
+      var src = "";
+      var orig = "";
+      var trans = "";
+      var i0 = full.indexOf("مصدر الخبر");
+      var i1 = full.indexOf("النص الأصلي");
+      var i2 = full.indexOf("الترجمة");
+      if (i0 >= 0 && i1 > i0) {
+        var chunk0 = full.slice(i0, i1).replace(/^[^\n]*\n/, "").trim();
+        src = chunk0.split(/\n\n+/)[0] || chunk0;
+      }
+      if (i1 >= 0 && i2 > i1) {
+        orig = full.slice(i1, i2).replace(/^[^\n]*\n/, "").trim();
+      }
+      if (i2 >= 0) {
+        trans = full.slice(i2).replace(/^[^\n]*\n/, "").trim();
+        trans = trans.replace(/رابط صورة المنشور:[\s\S]*$/i, "").trim();
+      }
+      if (!src && !orig && !trans) {
+        return { source: "", original: raw, translation: "" };
+      }
+      return { source: src, original: orig, translation: trans };
+    }
+
+    function wizardRenderExtractBlocks(parsed) {
+      var elS = document.getElementById("wizExtractSource");
+      var elO = document.getElementById("wizExtractOriginal");
+      var elT = document.getElementById("wizExtractTranslated");
+      parsed = parsed || {};
+      if (elS) elS.textContent = parsed.source || "";
+      if (elO) elO.textContent = parsed.original || "";
+      if (elT) elT.textContent = parsed.translation || "";
+    }
+
     /**
      * عند ضعف أو فراغ جلب المتصفح: Responses API + أداة البحث في الويب (مدمجة في OpenAI)
      * لتصل النموذج إلى الصفحة واستخراج المحتوى.
@@ -2292,15 +2496,17 @@
           : "";
 
       var metaHint = "";
-      if (meta.description || meta.author || meta.title || meta.imageUrl) {
+      if (meta.description || meta.author || meta.title) {
         metaHint =
           "\n\n---\nبيانات معاونة من خدمة معاينة الرابط:\n" +
           (meta.author ? "حساب المنشور: " + meta.author + "\n" : "") +
           (meta.title ? "عنوان: " + meta.title + "\n" : "") +
           (meta.description
             ? "نص وصف المنشور (من صاحب الحساب):\n" + meta.description + "\n"
-            : "") +
-          (meta.imageUrl ? "رابط صورة: " + meta.imageUrl + "\n" : "");
+            : "");
+      }
+      if (meta.imageUrl) {
+        metaHint += "توجد صورة منشور تُعرض في واجهة المستخدم (لا تدرج في JSON أي رابط http أو https).\n";
       }
 
       var socialNote = "";
@@ -2313,18 +2519,21 @@
       }
 
       var inputText =
-        "المهمة: استخراج خبر من منشور واحد ثم تنسيق الناتج بالعربية بالترتيب التالي تماماً:\n\n" +
-        "مصدر الخبر:\n(مثل: إنستغرام — @المستخدم)\n\n" +
-        "النص الأصلي من المنشور:\n(النص الكامل بلغته الأصلية من وصف المنشور فقط)\n\n" +
-        "الترجمة إلى العربية:\n(ترجمة كاملة للنص أعلاه)\n\n" +
-        "رابط صورة المنشور:\n(URL أو غير متاح)\n\n" +
-        "استخدم أداة البحث في الويب عند الحاجة.\n\n" +
-        "الرابط:\n" +
+        "المهمة: استخراج خبر من منشور واحد. أعد الإجابة كسلسلة JSON صالحة فقط (بدون markdown، بدون نص قبل أو بعد JSON).\n" +
+        'الشكل المطلوب بالضبط: {"source":"...","original":"...","translation":"..."}\n' +
+        "- source: سطر أو سطران لمصدر الخبر (مثل: إنستغرام — ثم اسم أو handle الحساب إن عرفته).\n" +
+        "- original: كامل نص صاحب الحساب / وصف المنشور باللغة الأصلية فقط (بدون تعليقات متابعين).\n" +
+        "- translation: ترجمة كاملة احترافية للنص السابق إلى العربية.\n\n" +
+        "قواعد JSON:\n" +
+        "- لا تدرج في أي حقل روابط http أو https، ولا رابط المنشور، ولا رابط صورة.\n" +
+        "- لا تدرج عدد إعجابات أو تعليقات جمهور.\n" +
+        "- لا تكتب «لا يوجد محتوى» إذا وُجد نص في وصف المنشور أو أدناه.\n\n" +
+        "استخدم أداة البحث في الويب عند الحاجة للوصول للصفحة.\n\n" +
+        "الصفحة المستهدفة (للسياق الداخلي فقط — لا تكرر الرابط داخل قيم JSON):\n" +
         pageUrl +
         hint +
         metaHint +
-        socialNote +
-        "\n\nلا تكتب «لا يوجد محتوى» إذا وُجد نص في «نص وصف المنشور» أو في المعاونة أعلاه.";
+        socialNote;
 
       function postResponses(toolPayload) {
         return fetch("https://api.openai.com/v1/responses", {
@@ -2357,7 +2566,7 @@
               errEmpty.status = 502;
               throw errEmpty;
             }
-            return txt;
+            return wizardCoerceModelOutputToJsonString(txt);
           });
         });
       }
@@ -2379,7 +2588,7 @@
     }
 
     /**
-     * تنسيق ناتج الخبر: مصدر، نص أصلي، ترجمة عربية، رابط صورة.
+     * تنسيق ناتج الخبر: JSON { source, original, translation }.
      * meta: { description, title, author, imageUrl, bundleText } من Microlink.
      */
     function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal, meta) {
@@ -2410,11 +2619,13 @@
               metaDesc +
               "\n"
             : "") +
-          (metaImg ? "رابط صورة المنشور (للعرض وللنسخ في المخرجات): " + metaImg + "\n" : "");
+          (metaImg
+            ? "توجد صورة منشور تُعرض تلقائياً في واجهة المستخدم — لا تدرج في JSON أي رابط http أو https.\n"
+            : "");
       }
 
       var userPart =
-        "الرابط:\n" +
+        "الصفحة (سياق داخلي — لا تكرر هذا الرابط داخل قيم JSON):\n" +
         pageUrl +
         "\n\n---\n\nمحتوى مُجلب آلياً من الصفحة (قد يشمل عناصر واجهة؛ تجاهل التعليقات أسفل المنشور):\n\n" +
         (truncated.trim() || "(قليل أو فارغ — اعتمد على قسم معاينة الرابط أدناه إن وُجد.)") +
@@ -2422,26 +2633,24 @@
         (isReel ? "\n\n(رابط ريل — استخدم نص الوصف من الحقول أعلاه كنص خبر.)" : "");
 
       var systemFull =
-        "أنت محرر أخبار. أخرج النتيجة بالضبط بهذا الترتيب والعناوين العربية التالية (كل قسم يبدأ بعنوان ثم سطر جديد ثم المحتوى):\n\n" +
-        "مصدر الخبر:\n" +
-        "سطر واحد أو سطران، مثل: إنستغرام — ثم اسم أو handle الحساب إن عرفته من البيانات.\n\n" +
-        "النص الأصلي من المنشور:\n" +
-        "انسخ كامل نص تعليق صاحب الحساب / وصف المنشور باللغة الأصلية كما في المصدر (من حقل وصف المنشور أو النص المعطى). لا تدرج تعليقات متابعين آخرين. لا تلخص باختصار مفرط؛ احتفظ بالاقتباسات والإيموزي إن كانت جزءاً من المنشور.\n\n" +
-        "الترجمة إلى العربية:\n" +
-        "ترجمة كاملة واحترافية للفقرة السابقة إلى العربية (إعلامية واضحة).\n\n" +
-        "رابط صورة المنشور:\n" +
-        "ضع الرابط الكامل إن وُجد في البيانات؛ أو اكتب: غير متاح.\n\n" +
+        "أنت محرر أخبار. أعد الإجابة ككائن JSON صالح فقط (بدون markdown، بدون أي نص خارج JSON).\n" +
+        'المفاتيح بالضبط: "source"، "original"، "translation" (كلها سلاسل نصية).\n' +
+        "- source: سطر أو سطران لمصدر الخبر (مثل: إنستغرام — ثم اسم أو handle الحساب إن عرفته من البيانات).\n" +
+        "- original: كامل نص صاحب الحساب / وصف المنشور باللغة الأصلية كما في المصدر. لا تدرج تعليقات متابعين. احتفظ بالإيموزي والاقتباسات إن كانت جزءاً من المنشور.\n" +
+        "- translation: ترجمة كاملة واحترافية لـ original إلى العربية (إعلامية واضحة).\n\n" +
         "قواعد صارمة:\n" +
-        "- لا تكتب «لا يوجد محتوى خبري» أو «لا يوجد» إذا وُجد أي نص في «نص وصف المنشور» أو في المحتوى المُجلب.\n" +
-        "- إذا كان المصدر إنستغرام والوصف موجوداً في بيانات معاينة الرابط، فذلك هو النص الأصلي للمنشور.\n" +
+        "- لا تدرج في أي حقل روابط http أو https، ولا رابط المنشور، ولا رابط صورة.\n" +
+        "- لا تدرج عدد إعجابات أو إحصاءات تفاعل.\n" +
+        "- لا تكتب «لا يوجد محتوى خبري» إذا وُجد أي نص في وصف المنشور أو المحتوى المُجلب.\n" +
+        "- إذا كان المصدر إنستغرام والوصف موجوداً في معاينة الرابط، فذلك هو النص الأصلي للمنشور.\n" +
         "- لا تخترع اقتباسات غير موجودة في النص المعطى.";
 
       var systemEmptyIg =
         "الرابط إنستغرام ولم يُجرَ أي نص وصف منشور في الطلب.\n" +
-        "اقترح للمستخدم نسخ «نص المنشور» من التطبيق ولصقه يدوياً. لا تقل إن الرابط خطأ.";
+        "أعد JSON بالمفاتيح source و original و translation؛ اشرح في الحقول بلطف أن على المستخدم نسخ نص المنشور من التطبيق يدوياً. لا تقل إن الرابط خطأ. لا تدرج روابط http في القيم.";
       var systemEmptyGeneric =
         "المحتوى المُجلب فارغ جداً ولا توجد معاونة من الرابط.\n" +
-        "اشرح ذلك باختصار واقترح لصق الرابط أو المحتوى يدوياً.";
+        "أعد JSON بالمفاتيح الثلاثة واشرح في النصوص اقتراح لصق الرابط أو المحتوى يدوياً. لا تدرج روابط http في القيم.";
 
       return fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -2460,7 +2669,8 @@
             { role: "user", content: userPart }
           ],
           temperature: 0.2,
-          max_tokens: 8192
+          max_tokens: 8192,
+          response_format: { type: "json_object" }
         })
       }).then(function (res) {
         return res.json().then(function (data) {
@@ -2473,7 +2683,7 @@
           var ch = data.choices && data.choices[0] && data.choices[0].message;
           var txt = ch && ch.content ? String(ch.content).trim() : "";
           if (!txt) throw new Error("استجابة فارغة من النموذج");
-          return txt;
+          return wizardCoerceModelOutputToJsonString(txt);
         });
       });
     }
@@ -3041,11 +3251,19 @@
           var lr = $("wizExtractLoading");
           var rw = $("wizExtractResultWrap");
           var ta = $("wizExtractResult");
+          var errFa = $("wizExtractErrorFallback");
+          var stru = $("wizExtractStructured");
           var iw = $("wizExtractImageWrap");
           var im = $("wizExtractImage");
           if (lr) lr.hidden = true;
           if (rw) rw.hidden = true;
           if (ta) ta.value = "";
+          if (errFa) {
+            errFa.value = "";
+            errFa.hidden = true;
+          }
+          if (stru) stru.hidden = false;
+          wizardRenderExtractBlocks({ source: "", original: "", translation: "" });
           if (iw) iw.hidden = true;
           if (im) im.removeAttribute("src");
         }
@@ -3318,6 +3536,14 @@
           if (loadEl) loadEl.hidden = false;
           btnExtractLink.disabled = true;
           if (resultTa) resultTa.value = "";
+          var errFa0 = $("wizExtractErrorFallback");
+          var stru0 = $("wizExtractStructured");
+          if (errFa0) {
+            errFa0.value = "";
+            errFa0.hidden = true;
+          }
+          if (stru0) stru0.hidden = false;
+          wizardRenderExtractBlocks({ source: "", original: "", translation: "" });
           if (resultWrap) resultWrap.hidden = true;
 
           var tmax = null;
@@ -3366,7 +3592,17 @@
             .then(function (finalText) {
               var out = String(finalText || "").trim();
               if (!out) throw new Error("empty");
-              if (resultTa) resultTa.value = out;
+              var parsed = wizardParseExtractResult(out);
+              wizardRenderExtractBlocks(parsed);
+              var plainOut = wizardFormatExtractPlainText(parsed);
+              if (resultTa) resultTa.value = plainOut || out;
+              var errFa = $("wizExtractErrorFallback");
+              var stru = $("wizExtractStructured");
+              if (errFa) {
+                errFa.value = "";
+                errFa.hidden = true;
+              }
+              if (stru) stru.hidden = false;
               if (resultWrap) resultWrap.hidden = false;
               var iw = $("wizExtractImageWrap");
               var im = $("wizExtractImage");
@@ -3403,7 +3639,10 @@
               try {
                 sessionStorage.setItem("90plus_wizard_source_url", u);
                 sessionStorage.setItem("90plus_wizard_source_type", "link");
-                sessionStorage.setItem("90plus_wizard_extracted_text", out.slice(0, 1800000));
+                sessionStorage.setItem(
+                  "90plus_wizard_extracted_text",
+                  (plainOut || out).slice(0, 1800000)
+                );
               } catch (e) {}
             })
             .catch(function (err) {
@@ -3420,13 +3659,41 @@
                 apiHint = "انتهت مهلة الطلب (3 دقائق) — أعد المحاولة أو تحقق من الشبكة.";
               }
               if (rawBackup && rawBackup.length > 80) {
-                if (resultTa) {
-                  resultTa.value =
-                    (apiHint ? apiHint + "\n\n---\n\n" : "") +
-                    "النص الخام المُجلب من الصفحة (دون معالجة OpenAI):\n\n" +
-                    rawBackup.slice(0, 150000);
+                var dump =
+                  (apiHint ? apiHint + "\n\n---\n\n" : "") +
+                  "النص الخام المُجلب من الصفحة (دون معالجة OpenAI):\n\n" +
+                  rawBackup.slice(0, 150000);
+                if (resultTa) resultTa.value = dump;
+                var errFaE = $("wizExtractErrorFallback");
+                var struE = $("wizExtractStructured");
+                if (struE) struE.hidden = true;
+                if (errFaE) {
+                  errFaE.value = dump;
+                  errFaE.hidden = false;
                 }
                 if (resultWrap) resultWrap.hidden = false;
+                var iwE = $("wizExtractImageWrap");
+                var imE = $("wizExtractImage");
+                if (iwE && imE) {
+                  if (mmMeta && mmMeta.imageUrl) {
+                    imE.alt = "صورة المنشور";
+                    imE.removeAttribute("width");
+                    imE.removeAttribute("height");
+                    imE.referrerPolicy = "no-referrer";
+                    imE.onerror = function () {
+                      iwE.hidden = true;
+                      imE.removeAttribute("src");
+                    };
+                    imE.onload = function () {
+                      imE.onerror = null;
+                    };
+                    imE.src = mmMeta.imageUrl;
+                    iwE.hidden = false;
+                  } else {
+                    iwE.hidden = true;
+                    imE.removeAttribute("src");
+                  }
+                }
                 fbExtractLink.textContent =
                   apiHint ||
                   (err && err.message
@@ -3435,6 +3702,17 @@
                 fbExtractLink.classList.add("err");
               } else {
                 if (resultTa) resultTa.value = "";
+                var errFaE2 = $("wizExtractErrorFallback");
+                if (errFaE2) {
+                  errFaE2.value = "";
+                  errFaE2.hidden = true;
+                }
+                var struE2 = $("wizExtractStructured");
+                if (struE2) struE2.hidden = false;
+                var iwE2 = $("wizExtractImageWrap");
+                var imE2 = $("wizExtractImage");
+                if (iwE2) iwE2.hidden = true;
+                if (imE2) imE2.removeAttribute("src");
                 if (resultWrap) resultWrap.hidden = true;
                 fbExtractLink.textContent =
                   apiHint ||
@@ -3455,10 +3733,14 @@
       var wizCopyTr = $("wizBtnCopyExtractToTranslation");
       if (wizCopyTr) {
         wizCopyTr.addEventListener("click", function () {
+          var trEl = $("wizExtractTranslated");
           var src = $("wizExtractResult");
           var dst = $("wizTranslation");
-          if (!src || !dst || !fbExtractLink) return;
-          dst.value = src.value || "";
+          if (!dst || !fbExtractLink) return;
+          var t =
+            (trEl && trEl.textContent && trEl.textContent.trim()) ||
+            (src && src.value ? src.value.trim() : "");
+          dst.value = t;
           fbExtractLink.classList.remove("err");
           fbExtractLink.classList.add("ok");
           fbExtractLink.textContent = "تم نسخ النص إلى حقل الترجمة في الخطوة التالية.";
