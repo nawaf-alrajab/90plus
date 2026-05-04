@@ -2529,20 +2529,10 @@
       return all.length ? all : [""];
     }
 
-    /** ارتفاع بصري لكتلة أسطر مع textBaseline: middle */
-    function measureTextBlockHeight(ctx, lines, fontPx, lineGap) {
-      if (!lines || !lines.length) return lineGap;
-      ctx.font = arabicFontSpec("700", fontPx);
-      var m0 = ctx.measureText(lines[0] || " ");
-      var mL = ctx.measureText(lines[lines.length - 1] || " ");
-      var asc =
-        typeof m0.actualBoundingBoxAscent === "number" ? m0.actualBoundingBoxAscent : fontPx * 0.58;
-      var desc =
-        typeof mL.actualBoundingBoxDescent === "number"
-          ? mL.actualBoundingBoxDescent
-          : fontPx * 0.3;
-      if (lines.length === 1) return asc + desc;
-      return asc + (lines.length - 1) * lineGap + desc;
+    /** ارتفاع كتلة نص بخط سطر ثابت (نمط top) + هامش سفلي للحروف السانحة */
+    function blockHeightTopMode(nLines, fontPx, lineHeight) {
+      if (nLines < 1) nLines = 1;
+      return nLines * lineHeight + Math.ceil(fontPx * 0.16);
     }
 
     /** تقسيم أي سطر أعرض من الحدّ إلى عدة أسطر (كلمات طويلة دون مسافات) */
@@ -2651,11 +2641,11 @@
      * أكبر حجم خط يبقي النص داخل المستطيل بعيداً عن الخطوط الصفراء، بهوامش علوية وسفلية متناسقة.
      */
     function fitArabicHeadlineInYellowBox(ctx, rawText, W, H, panelTop, badgeH) {
-      var innerPadX = 100;
-      var maxW = Math.max(120, W - 2 * innerPadX - 20);
+      var innerPadX = 102;
+      var maxW = Math.max(120, W - 2 * innerPadX - 24);
       var badgeBottom = panelTop + badgeH * 0.5;
-      var padUnderBadge = 62;
-      var padBottom = 96;
+      var padUnderBadge = 64;
+      var padBottom = 98;
       var textTop = Math.round(badgeBottom + padUnderBadge);
       var textBottom = H - padBottom;
       var maxH = textBottom - textTop;
@@ -2668,11 +2658,11 @@
       for (var s = maxPx; s >= minPx; s--) {
         ctx.font = arabicFontSpec("700", s);
         var lines = wrapHeadlineForPost(ctx, text, maxW, s);
-        var gap = Math.round(s * 1.58);
-        var blockH = measureTextBlockHeight(ctx, lines, s, gap);
+        var lineHeight = Math.round(s * 1.52);
+        var blockH = blockHeightTopMode(lines.length, s, lineHeight);
         if (blockH > maxH) continue;
         var ok = true;
-        var wCap = maxW * 0.98;
+        var wCap = maxW * 0.97;
         for (var li = 0; li < lines.length; li++) {
           if (ctx.measureText(lines[li]).width > wCap) {
             ok = false;
@@ -2680,36 +2670,32 @@
           }
         }
         if (!ok) continue;
-        chosen = { fontPx: s, lines: lines, lineGap: gap, blockH: blockH };
+        chosen = { fontPx: s, lines: lines, lineHeight: lineHeight, blockH: blockH };
         break;
       }
       if (!chosen) {
         ctx.font = arabicFontSpec("700", minPx);
         var linesMin = wrapHeadlineForPost(ctx, text, maxW, minPx);
-        var gapMin = Math.round(minPx * 1.58);
+        var lhMin = Math.round(minPx * 1.52);
         chosen = {
           fontPx: minPx,
           lines: linesMin,
-          lineGap: gapMin,
-          blockH: measureTextBlockHeight(ctx, linesMin, minPx, gapMin)
+          lineHeight: lhMin,
+          blockH: blockHeightTopMode(linesMin.length, minPx, lhMin)
         };
       }
       var n = chosen.lines.length;
-      var gap = chosen.lineGap;
-      var midY = (textTop + textBottom) / 2;
-      var fp = chosen.fontPx;
-      var topLim = textTop + fp * 0.58;
-      var botLim = textBottom - fp * 0.58;
-      var ideal = midY - ((n - 1) * gap) / 2;
-      var low = topLim;
-      var high = botLim - (n - 1) * gap;
-      var startY =
-        low > high ? (textTop + textBottom - (n - 1) * gap) / 2 : Math.min(high, Math.max(low, ideal));
+      var lh = chosen.lineHeight;
+      var bh = chosen.blockH;
+      var lineTop = textTop + (maxH - bh) / 2;
+      if (lineTop < textTop) lineTop = textTop;
+      if (lineTop + bh > textBottom) lineTop = textBottom - bh;
+      if (lineTop < textTop) lineTop = textTop;
       return {
         fontPx: chosen.fontPx,
         lines: chosen.lines,
-        lineGap: chosen.lineGap,
-        startY: startY,
+        lineHeight: lh,
+        lineTop: lineTop,
         textTop: textTop,
         textBottom: textBottom
       };
@@ -2806,12 +2792,16 @@
       var fit = fitArabicHeadlineInYellowBox(ctx, headlineAr, W, H, panelTop, badgeH);
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+      ctx.textBaseline = "top";
+      try {
+        ctx.direction = "rtl";
+      } catch (eDir) {}
       ctx.font = arabicFontSpec("700", fit.fontPx);
       ctx.shadowColor = "rgba(0,0,0,0.35)";
       ctx.shadowBlur = transparentTpl ? 5 : 3;
+      var lx = W / 2;
       for (var li = 0; li < fit.lines.length; li++) {
-        ctx.fillText(fit.lines[li], W / 2, fit.startY + li * fit.lineGap);
+        ctx.fillText(fit.lines[li], lx, fit.lineTop + li * fit.lineHeight);
       }
       ctx.shadowBlur = 0;
       return true;
