@@ -1420,7 +1420,7 @@
           </div>
 
           <div class="wizard-progress">
-            <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">10</span> — <span id="wizardStepTitle">إدراج خبر</span></span>
+            <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">8</span> — <span id="wizardStepTitle">إدراج خبر</span></span>
             <div class="wizard-progress-bar">
               <div class="wizard-progress-fill" id="wizardProgressFill"></div>
             </div>
@@ -1503,7 +1503,7 @@
                   <textarea id="wizExtractResult" readonly dir="auto" aria-hidden="true" tabindex="-1"></textarea>
                   <div class="wiz-field-actions">
                     <button type="button" class="wizard-btn wizard-btn--merge" id="wizBtnCopyExtractToTranslation">
-                      نسخ النص إلى خطوة الترجمة
+                      نسخ الترجمة للمسار
                     </button>
                   </div>
                 </div>
@@ -1511,6 +1511,8 @@
                   تُعرض النتيجة: المصدر، ثم النص الأصلي، ثم الترجمة، مع معاينة الصورة بجانب النص عند توفرها — دون إظهار رابط المنشور أو الإعجابات في المربعات. يُفضّل /p/ لإنستغرام. المفتاح من الإعدادات. إن ضاق الجلب يُفعَّل بحث الويب. المنشورات الخاصة قد لا تُعرض. النص داخل الصورة يحتاج OCR.
                 </p>
               </div>
+
+              <textarea id="wizTranslation" hidden aria-hidden="true" tabindex="-1"></textarea>
 
               <div id="wizBlockImage" class="wiz-source-block" hidden>
                 <div class="wiz-field">
@@ -1524,27 +1526,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="1" role="group" aria-labelledby="wizTitle1">
-              <h3 id="wizTitle1">ترجمة</h3>
-              <div class="wiz-field">
-                <label for="wizTranslation">نص الترجمة</label>
-                <textarea id="wizTranslation" placeholder="أدخل النص بعد الترجمة أو الصق المحتوى المترجم…"></textarea>
-              </div>
-            </div>
-
-            <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle2">
-              <h3 id="wizTitle2">عرض المحتوى</h3>
-              <div class="wiz-field">
-                <label for="wizContentView">معاينة المحتوى (للمراجعة)</label>
-                <textarea id="wizContentView" readonly dir="auto"></textarea>
-              </div>
-              <label class="wiz-check">
-                <input type="checkbox" id="wizContentOk" />
-                <span>أكملت مراجعة المحتوى ووافقت عليه</span>
-              </label>
-            </div>
-
-            <div class="wizard-pane" data-step="3" role="group" aria-labelledby="wizTitle3">
+            <div class="wizard-pane" data-step="1" role="group" aria-labelledby="wizTitle3">
               <h3 id="wizTitle3">إعادة صياغة</h3>
               <div class="wiz-field">
                 <label for="wizRewrite">النص بعد إعادة الصياغة</label>
@@ -1552,7 +1534,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="4" role="group" aria-labelledby="wizTitle4">
+            <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle4">
               <h3 id="wizTitle4">اختيار القالب</h3>
               <div class="wiz-field">
                 <label for="wizTemplate">القالب</label>
@@ -1566,7 +1548,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="5" role="group" aria-labelledby="wizTitle5">
+            <div class="wizard-pane" data-step="3" role="group" aria-labelledby="wizTitle5">
               <h3 id="wizTitle5">رفع الصورة</h3>
               <div class="wiz-field">
                 <label for="wizImage">صورة المنشور</label>
@@ -1574,7 +1556,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="6" role="group" aria-labelledby="wizTitle6">
+            <div class="wizard-pane" data-step="4" role="group" aria-labelledby="wizTitle6">
               <h3 id="wizTitle6">استخراج القالب</h3>
               <div class="wiz-field">
                 <label for="wizExtractTemplate">محتوى مستخرج وفق القالب</label>
@@ -1582,7 +1564,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="7" role="group" aria-labelledby="wizTitle7">
+            <div class="wizard-pane" data-step="5" role="group" aria-labelledby="wizTitle7">
               <h3 id="wizTitle7">تصدير كابشن</h3>
               <div class="wiz-field">
                 <label for="wizCaption">نص الكابشن</label>
@@ -1590,7 +1572,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="8" role="group" aria-labelledby="wizTitle8">
+            <div class="wizard-pane" data-step="6" role="group" aria-labelledby="wizTitle8">
               <h3 id="wizTitle8">عرض قبل التصدير</h3>
               <p class="hint">راجع الملخص أدناه قبل المتابعة.</p>
               <div class="wiz-preview-summary" id="wizPreviewSummary"></div>
@@ -1600,7 +1582,7 @@
               </label>
             </div>
 
-            <div class="wizard-pane" data-step="9" role="group" aria-labelledby="wizTitle9">
+            <div class="wizard-pane" data-step="7" role="group" aria-labelledby="wizTitle9">
               <h3 id="wizTitle9">استخراج</h3>
               <div class="wiz-field">
                 <label for="wizFinalExport">الناتج النهائي</label>
@@ -3203,8 +3185,6 @@
     (function initCreateWizard() {
       var STEP_LABELS = [
         "إدراج خبر",
-        "ترجمة",
-        "عرض المحتوى",
         "إعادة صياغة",
         "اختيار القالب",
         "رفع الصورة",
@@ -3296,58 +3276,45 @@
             }
             return true;
           case 1:
-            t = ($("wizTranslation").value || "").trim();
-            if (t.length < 2) {
-              setErr("أدخل نص الترجمة (حرفان على الأقل).");
-              return false;
-            }
-            return true;
-          case 2:
-            if (!$("wizContentOk").checked) {
-              setErr("يُرجى تأكيد مراجعة المحتوى.");
-              return false;
-            }
-            return true;
-          case 3:
             t = ($("wizRewrite").value || "").trim();
             if (t.length < 4) {
               setErr("أدخل نص إعادة الصياغة (4 أحرف على الأقل).");
               return false;
             }
             return true;
-          case 4:
+          case 2:
             if (!$("wizTemplate").value) {
               setErr("اختر قالباً من القائمة.");
               return false;
             }
             return true;
-          case 5:
+          case 3:
             if (!$("wizImage").files || !$("wizImage").files[0]) {
               setErr("ارفع صورة للمتابعة.");
               return false;
             }
             return true;
-          case 6:
+          case 4:
             t = ($("wizExtractTemplate").value || "").trim();
             if (t.length < 3) {
               setErr("أدخل نص استخراج القالب.");
               return false;
             }
             return true;
-          case 7:
+          case 5:
             t = ($("wizCaption").value || "").trim();
             if (t.length < 2) {
               setErr("أدخل نص الكابشن.");
               return false;
             }
             return true;
-          case 8:
+          case 6:
             if (!$("wizPreviewOk").checked) {
               setErr("يُرجى التأكيد بعد مراجعة المعاينة.");
               return false;
             }
             return true;
-          case 9:
+          case 7:
             t = ($("wizFinalExport").value || "").trim();
             if (!t) {
               setErr("أدخل الناتج النهائي أو اضغط «توليد الناتج من الخطوات».");
@@ -3384,7 +3351,7 @@
           head +
           "\n\n--- مسار المنشور ---\nالقالب: " +
           tplText +
-          "\n\nصورة المنشور (الخطوة 6): " +
+          "\n\nصورة المنشور: " +
           imgName +
           "\n\nمقتطف الترجمة:\n" +
           tr.slice(0, 280) +
@@ -3449,7 +3416,7 @@
         $("wizardNext").hidden = currentStep >= total - 1;
         $("wizardFinish").hidden = currentStep !== total - 1;
 
-        if (currentStep === 8) {
+        if (currentStep === 6) {
           $("wizPreviewSummary").textContent = buildPreviewText();
         }
       }
@@ -3474,8 +3441,17 @@
 
       $("wizardNext").addEventListener("click", function () {
         if (!validateStep(currentStep)) return;
-        if (currentStep === 1) {
-          $("wizContentView").value = $("wizTranslation").value;
+        if (currentStep === 0) {
+          var wt = $("wizTranslation");
+          var trEl = $("wizExtractTranslated");
+          if (
+            wt &&
+            !((wt.value || "").trim()) &&
+            trEl &&
+            (trEl.textContent || "").trim()
+          ) {
+            wt.value = trEl.textContent.trim();
+          }
         }
         if (currentStep < total - 1) {
           currentStep++;
@@ -3743,7 +3719,7 @@
           dst.value = t;
           fbExtractLink.classList.remove("err");
           fbExtractLink.classList.add("ok");
-          fbExtractLink.textContent = "تم نسخ النص إلى حقل الترجمة في الخطوة التالية.";
+          fbExtractLink.textContent = "تم نسخ الترجمة لاستخدامها في الخطوات التالية.";
         });
       }
 
@@ -3777,7 +3753,7 @@
       syncSourceTypeUI();
 
       $("wizardFinish").addEventListener("click", function () {
-        if (!validateStep(9)) return;
+        if (!validateStep(7)) return;
         if (okBox) {
           okBox.hidden = false;
           okBox.textContent = "تم إكمال مسار إنشاء المنشور بنجاح.";
