@@ -718,6 +718,101 @@
       color: rgba(255, 255, 255, 0.45);
     }
 
+    .tpl-test-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .tpl-test-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .tpl-test-text {
+      width: 100%;
+      min-height: 5.5rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.22);
+      background: rgba(0, 0, 0, 0.35);
+      color: rgba(255, 255, 255, 0.95);
+      font-family: inherit;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .tpl-test-text:focus {
+      outline: none;
+      border-color: var(--bus-yellow, #ffc300);
+      box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.12);
+    }
+
+    .tpl-test-bg-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.65rem;
+    }
+
+    .tpl-test-bg-file {
+      flex: 1;
+      min-width: 8rem;
+      font-size: 0.8rem;
+      max-width: 100%;
+    }
+
+    .tpl-test-clear-bg {
+      padding: 0.28rem 0.55rem;
+      font-size: 0.76rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .tpl-test-clear-bg:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tpl-test-bg-preview {
+      max-width: 100%;
+      max-height: 100px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.25);
+      object-fit: contain;
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-template-test-apply {
+      margin-top: 0.15rem;
+      padding: 0.48rem 0.85rem;
+      font-size: 0.88rem;
+      border-radius: 8px;
+      border: 1px solid rgba(126, 239, 175, 0.45);
+      background: rgba(46, 204, 113, 0.18);
+      color: #b8f5c8;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+
+    .btn-template-test-apply:hover:not(:disabled) {
+      background: rgba(46, 204, 113, 0.28);
+    }
+
+    .btn-template-test-apply:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
     .templates-builtin-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -2010,7 +2105,7 @@
           <div class="templates-library-head">
             <h3>قوالبك</h3>
             <p class="hint templates-library-sub">
-              مرتبة من الأحدث للأقدم. زر «اختبار» يعرض معاينة سريعة بنص وهمي على خلفية تجريبية (وليس منشوراً حقيقياً).
+              مرتبة من الأحدث للأقدم. «اختبار» يفتح لوحة لكتابة نص تجريبي واختيار صورة خلفية، ثم «عرض المعاينة» يولّد صورة محلية وليست منشوراً حقيقياً.
             </p>
           </div>
           <div id="templatesCustomList" class="templates-cards-grid" role="list" aria-label="قوالب مضافة"></div>
@@ -2508,6 +2603,31 @@
           resolve(img);
         };
         img.src = c.toDataURL("image/png");
+      });
+    }
+
+    /** تحويل ملف صورة رفعَه المستخدم إلى عنصر Image للمعاينة */
+    function fileToImage(file) {
+      return new Promise(function (resolve) {
+        if (!file || !/^image\//i.test(file.type || "")) {
+          resolve(null);
+          return;
+        }
+        var fr = new FileReader();
+        fr.onload = function () {
+          var img = new Image();
+          img.onload = function () {
+            resolve(img.naturalWidth ? img : null);
+          };
+          img.onerror = function () {
+            resolve(null);
+          };
+          img.src = fr.result;
+        };
+        fr.onerror = function () {
+          resolve(null);
+        };
+        fr.readAsDataURL(file);
       });
     }
 
@@ -4153,13 +4273,89 @@
           var testPanel = document.createElement("div");
           testPanel.className = "tpl-test-panel";
           testPanel.hidden = true;
+
+          var testForm = document.createElement("div");
+          testForm.className = "tpl-test-form";
+
+          var lblText = document.createElement("label");
+          lblText.className = "tpl-test-label";
+          lblText.textContent = "نص المعاينة";
+          var taTest = document.createElement("textarea");
+          taTest.className = "tpl-test-text";
+          taTest.setAttribute("dir", "auto");
+          taTest.setAttribute(
+            "placeholder",
+            "اكتب النص الذي تريد تجربته على شكل البوست…"
+          );
+          taTest.value =
+            "نص تجريبي لمعاينة القالب — عدّل هذا النص أو استبدله بالخبر الذي تريد معاينته.";
+          lblText.appendChild(taTest);
+
+          var lblBg = document.createElement("span");
+          lblBg.className = "tpl-test-label";
+          lblBg.textContent = "صورة خلفية للاختبار (اختياري)";
+          var bgRow = document.createElement("div");
+          bgRow.className = "tpl-test-bg-row";
+          var fileBg = document.createElement("input");
+          fileBg.type = "file";
+          fileBg.accept = "image/*";
+          fileBg.className = "tpl-test-bg-file";
+          var btnClearBg = document.createElement("button");
+          btnClearBg.type = "button";
+          btnClearBg.className = "tpl-test-clear-bg";
+          btnClearBg.textContent = "إزالة الصورة";
+          btnClearBg.hidden = true;
+          bgRow.appendChild(fileBg);
+          bgRow.appendChild(btnClearBg);
+
+          var bgPreview = document.createElement("img");
+          bgPreview.className = "tpl-test-bg-preview";
+          bgPreview.alt = "معاينة صورة الخلفية";
+          bgPreview.hidden = true;
+
+          fileBg.addEventListener("change", function () {
+            var f = fileBg.files && fileBg.files[0];
+            if (!f || !/^image\//i.test(f.type || "")) {
+              bgPreview.hidden = true;
+              btnClearBg.hidden = true;
+              bgPreview.removeAttribute("src");
+              return;
+            }
+            var r = new FileReader();
+            r.onload = function () {
+              bgPreview.src = r.result;
+              bgPreview.hidden = false;
+              btnClearBg.hidden = false;
+            };
+            r.readAsDataURL(f);
+          });
+          btnClearBg.addEventListener("click", function () {
+            fileBg.value = "";
+            bgPreview.hidden = true;
+            btnClearBg.hidden = true;
+            bgPreview.removeAttribute("src");
+          });
+
+          var btnApply = document.createElement("button");
+          btnApply.type = "button";
+          btnApply.className = "btn-template-test-apply";
+          btnApply.setAttribute("data-template-id", t.id);
+          btnApply.textContent = "عرض المعاينة";
+
+          testForm.appendChild(lblText);
+          testForm.appendChild(lblBg);
+          testForm.appendChild(bgRow);
+          testForm.appendChild(bgPreview);
+          testForm.appendChild(btnApply);
+
           var cnv = document.createElement("canvas");
           cnv.className = "tpl-test-canvas";
           cnv.setAttribute("aria-label", "معاينة تجريبية للقالب");
           var testHint = document.createElement("p");
           testHint.className = "tpl-test-hint";
           testHint.textContent =
-            "معاينة تجريبية بنص وهمي على خلفية افتراضية — ليست منشوراً حقيقياً.";
+            "غيّر النص أو الصورة واضغط «عرض المعاينة» مجدداً. المعاينة محلية وليست منشوراً حقيقياً.";
+          testPanel.appendChild(testForm);
           testPanel.appendChild(cnv);
           testPanel.appendChild(testHint);
 
@@ -4334,6 +4530,48 @@
       var customUl = document.getElementById("templatesCustomList");
       if (customUl) {
         customUl.addEventListener("click", function (e) {
+          var applyBtn = e.target && e.target.closest(".btn-template-test-apply");
+          if (applyBtn) {
+            e.preventDefault();
+            var tidA = applyBtn.getAttribute("data-template-id");
+            var cardA = applyBtn.closest(".tpl-card");
+            if (!tidA || !cardA) return;
+            var taEl = cardA.querySelector(".tpl-test-text");
+            var fileInEl = cardA.querySelector(".tpl-test-bg-file");
+            var cnvA = cardA.querySelector("canvas.tpl-test-canvas");
+            if (!cnvA) return;
+            var textPreview = taEl ? String(taEl.value || "").trim() : "";
+            if (!textPreview) {
+              setTemplatesFeedback("اكتب نصاً في حقل المعاينة أولاً.", "err");
+              return;
+            }
+            if (textPreview.length > 12000) textPreview = textPreview.slice(0, 12000);
+            var fileBg = fileInEl && fileInEl.files && fileInEl.files[0] ? fileInEl.files[0] : null;
+            applyBtn.disabled = true;
+            var bgPromise =
+              fileBg && /^image\//i.test(fileBg.type || "")
+                ? fileToImage(fileBg).then(function (im) {
+                    return im || createPlaceholderBgImage();
+                  })
+                : createPlaceholderBgImage();
+            Promise.all([bgPromise, loadTemplateImageFromIDB(tidA)])
+              .then(function (pair) {
+                var bg = pair[0];
+                var ov = pair[1];
+                composePostStoryImage(cnvA, bg, ov, textPreview);
+              })
+              .catch(function () {
+                setTemplatesFeedback(
+                  "تعذّرت المعاينة. تأكد من أن المتصفح يسمح بالتخزين المحلي وصورة القالب.",
+                  "err"
+                );
+              })
+              .finally(function () {
+                applyBtn.disabled = false;
+              });
+            return;
+          }
+
           var testBtn = e.target && e.target.closest(".btn-template-test");
           if (testBtn) {
             e.preventDefault();
@@ -4341,8 +4579,7 @@
             if (!tidT) return;
             var cardT = testBtn.closest(".tpl-card");
             var panel = cardT && cardT.querySelector(".tpl-test-panel");
-            var cnvEl = cardT && cardT.querySelector("canvas.tpl-test-canvas");
-            if (!panel || !cnvEl) return;
+            if (!panel) return;
             if (!panel.hidden) {
               panel.hidden = true;
               testBtn.setAttribute("aria-expanded", "false");
@@ -4357,29 +4594,14 @@
                 if (ob) ob.setAttribute("aria-expanded", "false");
               }
             }
-            testBtn.disabled = true;
-            var prevLabel = testBtn.textContent;
-            testBtn.textContent = "…";
-            var sampleHeadline =
-              "نص تجريبي لمعاينة القالب — الطريقة السريعة قبل الخبر الحقيقي في المسار.";
-            Promise.all([createPlaceholderBgImage(), loadTemplateImageFromIDB(tidT)])
-              .then(function (pair) {
-                var bg = pair[0];
-                var ov = pair[1];
-                composePostStoryImage(cnvEl, bg, ov, sampleHeadline);
-                panel.hidden = false;
-                testBtn.setAttribute("aria-expanded", "true");
-              })
-              .catch(function () {
-                setTemplatesFeedback(
-                  "تعذّرت المعاينة. تأكد من أن المتصفح يسمح بالتخزين المحلي وصورة القالب.",
-                  "err"
-                );
-              })
-              .finally(function () {
-                testBtn.disabled = false;
-                testBtn.textContent = prevLabel || "اختبار";
-              });
+            panel.hidden = false;
+            testBtn.setAttribute("aria-expanded", "true");
+            var taFocus = cardT && cardT.querySelector(".tpl-test-text");
+            if (taFocus) {
+              try {
+                taFocus.focus();
+              } catch (fx) {}
+            }
             return;
           }
 
