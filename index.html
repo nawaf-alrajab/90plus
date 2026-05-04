@@ -2265,7 +2265,7 @@
       return (
         "【مواصفات منطقة النص على صورة البوست — يلتزم بها النص الذي تخرجه】\n" +
         "• المقاس: صورة ١٠٨٠×١٣٥٠ بكسل (إنستغرام ٤:٥). النص داخل المستطيل السفلي ذي الحدود الذهبية، أسفل شارة «# ninety plus».\n" +
-        "• الهامش الجانبي: يجب أن يبقى فراغ واضح بين النص وبين الخط الذهبي الأيسر والأيمن — لا تكتب أسطراً أعرض من حوالي ٣٠–٣٤ حرفاً عربياً لكل سطر (يعادل عرضاً رسماً نحو ٧٤٠ بكسل بخط عريض).\n" +
+        "• الهامش الجانبي: يجب أن يبقى فراغ واضح بين النص وبين الخط الذهبي الأيسر والأيمن — لا تكتب أسطراً أعرض من حوالي ٢٨–٣٢ حرفاً عربياً لكل سطر (يعادل عرضاً رسماً نحو ٧٤٠ بكسل بخط عريض).\n" +
         "• عدد الأسطر: ٣–٤ أسطر مثالية؛ سطران إذا كان الخبر قصيراً جداً؛ ٥ أسطر كحدّ أقصى عند الضرورة.\n" +
         "• التقسيم: كل جملة أو فكرة في سطر مستقل؛ استخدم سطراً جديداً (Enter) بين الأسطر. لا تدمج فقرة طويلة في سطر واحد.\n" +
         "• التوازن: قارب طول الأسطر في عدد الأحرف قدر الإمكان حتى يبدو النص مثل بوست قناة احترافية.\n" +
@@ -2273,6 +2273,77 @@
         "• الأسلوب: عربية فصحى إخبارية موجزة، صوت شاشة رياضية عالمية، واضحة عند التمرير السريع.\n" +
         "• الهدف التقني: التطبيق يضبط حجم الخط تلقائياً داخل المستطيل؛ النص الموزّع والجمل القصيرة يُظهر خطاً أكبر وأوضح."
       );
+    }
+
+    /** نقطة تقسيم مناسبة ضمن segment (مسافة، فاصلة عربية، إلخ) */
+    function findArabicLineCut(segment, maxLen) {
+      if (segment.length <= maxLen) return segment.length;
+      var window = segment.slice(0, maxLen + 1);
+      var sp = window.lastIndexOf(" ");
+      var c1 = window.lastIndexOf("،");
+      var c2 = window.lastIndexOf("؛");
+      var c3 = window.lastIndexOf(".");
+      var cq = window.lastIndexOf("؟");
+      var ce = window.lastIndexOf("!");
+      var cc = window.lastIndexOf(":");
+      var cut = Math.max(sp, c1, c2, c3, cq, ce, cc);
+      if (cut < Math.floor(maxLen * 0.35)) cut = maxLen;
+      return cut > 0 ? cut : maxLen;
+    }
+
+    /**
+     * إعادة تقسيم النص محلياً حتى لا تعتمد على جودة النموذج فقط — أسطر متوازنة وعرض آمن.
+     */
+    function reflowHeadlineForPostLayout(rawText, maxChars) {
+      var maxLen = Math.max(20, Math.min(32, maxChars || 28));
+      var t = String(rawText || "")
+        .trim()
+        .replace(/\r\n/g, "\n")
+        .replace(/^```[\w]*\s*/m, "")
+        .replace(/\s*```$/m, "")
+        .trim();
+      if (!t) return "";
+      var parts = t.split(/\n+/);
+      var out = [];
+      for (var p = 0; p < parts.length; p++) {
+        var seg = parts[p].replace(/^\s*[\-\*•]\s*/, "").trim();
+        if (!seg) continue;
+        while (seg.length > maxLen) {
+          var cut = findArabicLineCut(seg, maxLen);
+          out.push(seg.slice(0, cut).trim());
+          seg = seg.slice(cut).trim().replace(/^،\s*/, "");
+        }
+        if (seg) out.push(seg);
+      }
+      return out.join("\n");
+    }
+
+    /** إزالة أحرف الاتجاه المخفية والمسافات الزائدة قبل تلخيص النص للصورة */
+    function normalizeArabicSourceForPostHeadline(text) {
+      return String(text || "")
+        .replace(/\r\n/g, "\n")
+        .replace(/[\u200e\u200f\u202a-\u202e]/g, "")
+        .replace(/[ \t\u00a0]+/g, " ")
+        .replace(/\n[ \t]+/g, "\n")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function ensureCanvasFontsLoaded() {
+      if (typeof document === "undefined" || !document.fonts) {
+        return Promise.resolve();
+      }
+      var loads = [];
+      try {
+        loads.push(document.fonts.load('700 52px "Cairo", "Almarai", sans-serif'));
+        loads.push(document.fonts.load('600 24px "Cairo", "Almarai", sans-serif'));
+        loads.push(document.fonts.load('700 48px "Cairo", "Almarai", sans-serif'));
+      } catch (eL) {}
+      loads.push(document.fonts.ready);
+      return Promise.all(loads.map(function (p) {
+        return Promise.resolve(p).catch(function () {});
+      }));
     }
 
     function idbOpen() {
@@ -2489,12 +2560,12 @@
     }
 
     function arabicFontSpec(weight, px) {
-      return weight + " " + px + "px Cairo, Tajawal, Almarai, sans-serif";
+      return weight + " " + px + "px Cairo, Almarai, sans-serif";
     }
 
     function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
       ctx.font = arabicFontSpec("700", fontPx);
-      var safeW = Math.max(72, maxWidth * 0.88);
+      var safeW = Math.max(72, maxWidth * 0.925);
       var words = String(text || "")
         .replace(/\s+/g, " ")
         .trim()
@@ -2737,6 +2808,7 @@
      * cutoutImg: صورة اللاعب (يفضّل PNG بشفافية) من خطوة «صورة المنشور» — تُرسم فوق الظل الأزرق.
      */
     function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr, cutoutImg) {
+      headlineAr = reflowHeadlineForPostLayout(headlineAr || "", 28);
       var W = 1080;
       var H = 1350;
       canvas.width = W;
@@ -2791,7 +2863,7 @@
         roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
         ctx.stroke();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "600 24px Cairo, Tajawal, Almarai, sans-serif";
+        ctx.font = "600 24px Cairo, Almarai, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.shadowBlur = 0;
@@ -2896,33 +2968,35 @@
     function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
       var layoutBrief = getPostCanvasOpenAILayoutBrief();
       var sys =
-        "أنت محرر نصوص شاشة رياضية عربية. أمامك «نموذج مواصفات التصميم» يصف كيف يُعرض النص فعلياً على الصورة (مناطق آمنة، حدود ذهبية، عرض بالبكسل).\n\n" +
+        "أنت محرر نصوص شاشة رياضية عربية. اتبع مواصفات التصميم التالية بدقة.\n\n" +
         layoutBrief +
-        "\n\nقواعد الإخراج:\n" +
-        "— أعد صياغة أو تقسيم محتوى المستخدم ليطابق المواصفات أعلاه حرفياً في الشكل (أسطر، طول تقريبي لكل سطر، فواصل أسطر).\n" +
-        "— اعتمد معنى المصدر فقط؛ يمكنك الاختصار الإخباري دون فقدان الجوهر.\n" +
-        "— أخرج النص الجاهز للصورة فقط، من غير تعليق أو شرح أو Markdown أو علامات اقتباس.\n" +
-        "— إن كان المصدر قصيراً: سطران أو ثلاثة متوازنة. إن كان طويلاً: وزّع على ٤–٥ أسطر دون تجاوز العرض الآمن لكل سطر.";
-      var usr =
-        "طبّق نموذج المواصفات من رسالة النظام.\n\n【المصدر】\n" +
-        String(articleArabicText || "").trim().slice(0, 12000);
+        "\n\nإخراج إلزامي بصيغة JSON فقط (بدون Markdown وبدون نص قبل أو بعد JSON):\n" +
+        '{ "lines": [ "سطر1", "سطر2", "سطر3" ] }\n' +
+        "— المفتاح lines فقط: مصفوفة نصوص عربية، كل عنصر سطراً واحداً في الصورة.\n" +
+        "— ٢–٥ عناصر في المصفوفة عادةً؛ لا تضع سطراً يتجاوز ~٣٢ حرفاً.\n" +
+        "— أعد صياغة معنى المصدر باختصار إخباري إن لزم؛ بدون هاشتاغ أو عنوان.\n" +
+        "— أخرج JSON صالحاً فقط.";
+      var usr = "صغ المصدر في الحقل lines:\n\n" + String(articleArabicText || "").trim().slice(0, 12000);
+      var bodyObj = {
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: sys },
+          { role: "user", content: usr }
+        ],
+        temperature: 0.2,
+        max_tokens: 900,
+        response_format: { type: "json_object" }
+      };
       var reqInit = {
         method: "POST",
         headers: {
           Authorization: "Bearer " + secret,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: sys },
-            { role: "user", content: usr }
-          ],
-          temperature: 0.28,
-          max_tokens: 800
-        })
+        body: JSON.stringify(bodyObj)
       };
       if (signal) reqInit.signal = signal;
+      var srcFallback = String(articleArabicText || "").trim();
       return fetch("https://api.openai.com/v1/chat/completions", reqInit).then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok) {
@@ -2932,9 +3006,29 @@
             throw err;
           }
           var ch = data.choices && data.choices[0] && data.choices[0].message;
-          var txt = ch && ch.content ? String(ch.content).trim() : "";
-          txt = txt.replace(/^```[a-zA-Z]*\s*/m, "").replace(/\s*```$/m, "").trim();
-          return txt || String(articleArabicText || "").trim();
+          var raw = ch && ch.content ? String(ch.content).trim() : "";
+          var joined = "";
+          try {
+            var obj = JSON.parse(raw);
+            if (obj && Array.isArray(obj.lines) && obj.lines.length) {
+              joined = obj.lines
+                .map(function (L) {
+                  return String(L != null ? L : "").trim();
+                })
+                .filter(function (s) {
+                  return s.length > 0;
+                })
+                .join("\n");
+            }
+          } catch (eJ) {}
+          if (!joined) {
+            joined = raw
+              .replace(/^```[a-zA-Z]*\s*/m, "")
+              .replace(/\s*```$/m, "")
+              .trim();
+          }
+          if (!joined) joined = srcFallback;
+          return reflowHeadlineForPostLayout(joined, 28);
         });
       });
     }
@@ -4830,7 +4924,9 @@
               .then(function (pair) {
                 var bg = pair[0];
                 var ov = pair[1];
-                composePostStoryImage(cnvA, bg, ov, textPreview);
+                return ensureCanvasFontsLoaded().then(function () {
+                  composePostStoryImage(cnvA, bg, ov, textPreview);
+                });
               })
               .catch(function () {
                 setTemplatesFeedback(
@@ -5487,6 +5583,7 @@
             ($("wizTranslation") && $("wizTranslation").value.trim()) ||
             ($("wizRewrite") && $("wizRewrite").value.trim()) ||
             "";
+          arText = normalizeArabicSourceForPostHeadline(arText);
           if (arText.length < 8) {
             if (fbPost) {
               fbPost.textContent =
@@ -5586,10 +5683,14 @@
               var cutImg = parts[2];
               return wizardOpenAIComposePostHeadline(secret, arText, null)
                 .catch(function () {
-                  return arText.slice(0, 900);
+                  return reflowHeadlineForPostLayout(arText.slice(0, 900), 28);
                 })
                 .then(function (headline) {
-                  composePostStoryImage(cvPost, bgImg, ovImg, headline, cutImg);
+                  return ensureCanvasFontsLoaded().then(function () {
+                    composePostStoryImage(cvPost, bgImg, ovImg, headline, cutImg);
+                  });
+                })
+                .then(function () {
                   try {
                     cvPost.toBlob(function (blob) {
                       if (!blob || !dlPost) return;
