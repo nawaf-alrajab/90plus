@@ -1512,10 +1512,13 @@
               <label for="openaiTokenInput">رمز API (Token)</label>
               <input type="password" id="openaiTokenInput" name="openai_token" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="إن وُجد رمز أو مفتاح مشروع منفصل" dir="ltr" />
             </div>
-            <p class="hint">يُحفظ محلياً في هذا المتصفح فقط. لا تُعرض المفاتيح على شاشة عامة.</p>
+            <p class="hint">
+              يُحفظ المفتاح في المتصفح ونسخة احتياطية على الجهاز؛ لا يُمسح إذا ضغطت «حفظ» وتركت الحقول فارغة — استخدم «مسح المفاتيح» إن أردت إزالته نهائياً من هذا الجهاز.
+            </p>
             <div class="settings-actions">
               <button type="button" class="btn-settings" id="btnSaveOpenaiSettings">حفظ المفاتيح</button>
               <button type="button" class="btn-settings btn-settings--secondary" id="btnVerifyOpenai">التحقق من الاتصال</button>
+              <button type="button" class="btn-settings btn-settings--secondary" id="btnClearOpenaiSettings">مسح المفاتيح</button>
             </div>
             <p class="settings-feedback muted" id="apiSettingsFeedback" role="status"></p>
           </section>
@@ -1525,7 +1528,7 @@
             <div id="logoUploadZone" class="logo-upload-zone" hidden>
               <label class="file-label" for="logoFileInput">اختر ملف الشعار (PNG فقط)</label>
               <input type="file" id="logoFileInput" accept="image/png,.png" />
-              <p class="hint">يُستبدل الشعار النصي «+90» في كل الصفحة. يُحفظ محلياً في هذا المتصفح فقط (حتى حجم تقريبي 2 ميجابايت).</p>
+              <p class="hint">يُستبدل الشعار النصي «+90» في كل الصفحة. يُحفظ في التخزين المحلي ونسخة احتياطية (IndexedDB) حتى لا يختفي مع الوقت؛ يبقى حتى ترفع شعاراً آخر أو تضغط «إزالة الشعار».</p>
               <p class="logo-upload-error" id="logoUploadError" role="alert"></p>
               <button type="button" class="btn-remove-logo" id="btnRemoveLogo">إزالة الشعار والعودة إلى «+90»</button>
             </div>
@@ -1606,6 +1609,116 @@
     var OPENAI_TOKEN_STORAGE = "90plus_openai_api_token";
     var OPENAI_VERIFIED_AT_KEY = "90plus_openai_verified_at";
     var USERS_STORAGE_KEY = "90plus_users_json";
+    var IDB_NAME = "90plus_app_db";
+    var IDB_VERSION = 1;
+    var IDB_STORE = "kv";
+    var IDB_KEY_OPENAI_BACKUP = "90plus_idb_openai_keys";
+    var IDB_KEY_LOGO_BACKUP = "90plus_idb_logo_png";
+
+    function idbOpen() {
+      return new Promise(function (resolve, reject) {
+        var req = indexedDB.open(IDB_NAME, IDB_VERSION);
+        req.onerror = function () {
+          reject(req.error);
+        };
+        req.onupgradeneeded = function () {
+          var db = req.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = function () {
+          resolve(req.result);
+        };
+      });
+    }
+
+    function idbSetRaw(key, value) {
+      return idbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).put(value, key);
+          tx.oncomplete = function () {
+            resolve();
+          };
+          tx.onerror = function () {
+            reject(tx.error);
+          };
+        });
+      });
+    }
+
+    function idbGetRaw(key) {
+      return idbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(IDB_STORE, "readonly");
+          var r = tx.objectStore(IDB_STORE).get(key);
+          r.onsuccess = function () {
+            resolve(r.result);
+          };
+          r.onerror = function () {
+            reject(r.error);
+          };
+        });
+      });
+    }
+
+    function idbDeleteRaw(key) {
+      return idbOpen().then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(IDB_STORE, "readwrite");
+          tx.objectStore(IDB_STORE).delete(key);
+          tx.oncomplete = function () {
+            resolve();
+          };
+          tx.onerror = function () {
+            reject(tx.error);
+          };
+        });
+      });
+    }
+
+    function backupOpenAIKeysToIDB() {
+      try {
+        var k = localStorage.getItem(OPENAI_KEY_STORAGE) || "";
+        var t = localStorage.getItem(OPENAI_TOKEN_STORAGE) || "";
+        if (!k && !t) {
+          /* لا نحذف النسخة الاحتياطية هنا — قد يكون التحميل لم يُكمَل بعد؛ الحذف فقط من «مسح المفاتيح». */
+          return Promise.resolve();
+        }
+        return idbSetRaw(
+          IDB_KEY_OPENAI_BACKUP,
+          JSON.stringify({ k: k, t: t, at: new Date().toISOString() })
+        ).catch(function () {});
+      } catch (e) {
+        return Promise.resolve();
+      }
+    }
+
+    function restoreOpenAIKeysFromIDB() {
+      return idbGetRaw(IDB_KEY_OPENAI_BACKUP)
+        .then(function (raw) {
+          if (!raw || typeof raw !== "string") return;
+          var o = JSON.parse(raw);
+          if (!o || typeof o !== "object") return;
+          try {
+            if (o.k && !localStorage.getItem(OPENAI_KEY_STORAGE)) {
+              localStorage.setItem(OPENAI_KEY_STORAGE, o.k);
+            }
+            if (o.t && !localStorage.getItem(OPENAI_TOKEN_STORAGE)) {
+              localStorage.setItem(OPENAI_TOKEN_STORAGE, o.t);
+            }
+          } catch (e) {}
+        })
+        .catch(function () {});
+    }
+
+    function backupLogoToIDB(dataUrl) {
+      if (!dataUrl) {
+        return idbDeleteRaw(IDB_KEY_LOGO_BACKUP).catch(function () {});
+      }
+      return idbSetRaw(IDB_KEY_LOGO_BACKUP, dataUrl).catch(function () {});
+    }
 
     function getOpenAISecret() {
       try {
@@ -2310,12 +2423,33 @@
       function loadFromStorage() {
         try {
           var s = localStorage.getItem(LOGO_STORAGE_KEY);
-          if (s && /^data:image\/png/i.test(s)) applyDataUrl(s);
+          if (s && /^data:image\/png/i.test(s)) {
+            applyDataUrl(s);
+            backupLogoToIDB(s);
+            return;
+          }
         } catch (e) {}
+        idbGetRaw(IDB_KEY_LOGO_BACKUP)
+          .then(function (s) {
+            if (s && typeof s === "string" && /^data:image\/png/i.test(s)) {
+              applyDataUrl(s);
+              try {
+                localStorage.setItem(LOGO_STORAGE_KEY, s);
+              } catch (e2) {
+                /* مساحة localStorage ممتلئة — يبقى الشعار من IndexedDB فقط */
+              }
+            }
+          })
+          .catch(function () {});
       }
 
       function saveDataUrl(dataUrl) {
-        localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
+        try {
+          localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
+        } catch (e) {
+          /* نسخة احتياطية دائماً في IndexedDB */
+        }
+        backupLogoToIDB(dataUrl);
         applyDataUrl(dataUrl);
       }
 
@@ -2323,6 +2457,7 @@
         try {
           localStorage.removeItem(LOGO_STORAGE_KEY);
         } catch (e) {}
+        idbDeleteRaw(IDB_KEY_LOGO_BACKUP).catch(function () {});
         applyDataUrl(null);
       }
 
@@ -2393,6 +2528,7 @@
       var tokenInput = document.getElementById("openaiTokenInput");
       var btnSave = document.getElementById("btnSaveOpenaiSettings");
       var btnVerify = document.getElementById("btnVerifyOpenai");
+      var btnClear = document.getElementById("btnClearOpenaiSettings");
 
       function setFeedback(kind, message) {
         if (!feedback) return;
@@ -2407,24 +2543,28 @@
         return k || t;
       }
 
+      /** يحدّث الحقول غير الفارغة فقط؛ الحقل الفارغ لا يمسح القيمة المحفوظة سابقاً. */
       function persistFromFields() {
         var k = keyInput ? keyInput.value.trim() : "";
         var t = tokenInput ? tokenInput.value.trim() : "";
-        if (!k && !t) {
-          try {
-            localStorage.removeItem(OPENAI_KEY_STORAGE);
-            localStorage.removeItem(OPENAI_TOKEN_STORAGE);
-          } catch (e) {}
-          return;
-        }
         try {
           if (k) localStorage.setItem(OPENAI_KEY_STORAGE, k);
-          else localStorage.removeItem(OPENAI_KEY_STORAGE);
           if (t) localStorage.setItem(OPENAI_TOKEN_STORAGE, t);
-          else localStorage.removeItem(OPENAI_TOKEN_STORAGE);
         } catch (e) {
           throw e;
         }
+        backupOpenAIKeysToIDB();
+      }
+
+      function clearAllOpenAIStored() {
+        try {
+          localStorage.removeItem(OPENAI_KEY_STORAGE);
+          localStorage.removeItem(OPENAI_TOKEN_STORAGE);
+          localStorage.removeItem(OPENAI_VERIFIED_AT_KEY);
+        } catch (e) {}
+        if (keyInput) keyInput.value = "";
+        if (tokenInput) tokenInput.value = "";
+        return idbDeleteRaw(IDB_KEY_OPENAI_BACKUP).catch(function () {});
       }
 
       function loadIntoFields() {
@@ -2438,6 +2578,8 @@
           if (verified) {
             var short = verified.replace("T", " ").slice(0, 19);
             setFeedback("muted", "آخر تحقق ناجح مسجل: " + short);
+          } else if (k || t) {
+            setFeedback("muted", "المفاتيح محفوظة في هذا المتصفح (نسخة احتياطية على الجهاز).");
           }
         } catch (e) {}
       }
@@ -2446,18 +2588,33 @@
         btnSave.addEventListener("click", function () {
           try {
             persistFromFields();
-            setFeedback("ok", "تم حفظ المفاتيح في المتصفح بنجاح.");
+            setFeedback("ok", "تم حفظ المفاتيح — القيم السابقة تبقى إذا تركت حقلها فارغاً.");
           } catch (e) {
             setFeedback("err", "تعذر الحفظ — تحقق من مساحة التخزين أو أذونات المتصفح.");
           }
         });
       }
 
+      if (btnClear) {
+        btnClear.addEventListener("click", function () {
+          if (
+            !confirm(
+              "مسح مفاتيح OpenAI من هذا المتصفح والنسخة الاحتياطية نهائياً؟ لا يمكن التراجع إلا بإدخال المفتاح من جديد."
+            )
+          ) {
+            return;
+          }
+          clearAllOpenAIStored().finally(function () {
+            setFeedback("ok", "تم مسح المفاتيح من الجهاز.");
+          });
+        });
+      }
+
       if (btnVerify) {
         btnVerify.addEventListener("click", function () {
-          var secret = getSecretFromFields();
+          var secret = getSecretFromFields() || getOpenAISecret();
           if (!secret) {
-            setFeedback("err", "أدخل مفتاح API أو رمز Token في أحد الحقلين ثم حاول مرة أخرى.");
+            setFeedback("err", "لا يوجد مفتاح محفوظ أو مُدخل — أدخل المفتاح أو احفظه أولاً.");
             return;
           }
           setFeedback("muted", "جاري التحقق مع api.openai.com …");
@@ -2504,7 +2661,9 @@
         });
       }
 
-      loadIntoFields();
+      restoreOpenAIKeysFromIDB().then(function () {
+        loadIntoFields();
+      });
     })();
 
     (function initSettingsSubtabs() {
