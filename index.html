@@ -1966,9 +1966,9 @@
               <div id="wizPostStorySection" class="wiz-post-story-section" hidden>
                 <h4 class="wiz-post-story-title">توليد صورة البوست (نمط 90+)</h4>
                 <p class="hint" style="font-size: 0.8rem; margin-bottom: 0.65rem">
-                  يُركَّب إطار عمودي مشابه للنماذج: صورة الخلفية من الرابط أو من صورة الخبر، ثم نص عربي مختصر عبر OpenAI.
-                  ارفع من «القوالب» ملف <strong>PNG</strong> ليُستخدم كطبقة فوق الصورة — يُفعَّل تلقائياً كقالب البوست.
-                  الأفضل تصدير PNG مع <strong>شفافية</strong> في وسط الإطار حيث تظهر صورة اللاعب.
+                  الخلفية من الرابط أو من «صورة الخبر»؛ طبقة ظل أزرق خفيف ثم <strong>صورة المنشور</strong> من خطوة رفع الصورة — يُفضَّل
+                  <strong>PNG مقصوص بخلفية شفافة</strong> ليظهر اللاعب فوق الخلفية بوضوح. النص يُضبط تلقائياً داخل الإطار الذهبي ويُنغَّم عبر
+                  OpenAI. من «القوالب» استخدم PNG إطار إن أردت؛ شفافية الوسط تسمح بمرور الصورة.
                 </p>
                 <div class="wiz-field-actions" style="flex-wrap: wrap; gap: 0.5rem">
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnGeneratePostImage">
@@ -2002,8 +2002,11 @@
             <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle5">
               <h3 id="wizTitle5">رفع الصورة</h3>
               <div class="wiz-field">
-                <label for="wizImage">صورة المنشور</label>
+                <label for="wizImage">صورة المنشور (اللاعب / مقصوص PNG)</label>
                 <input type="file" id="wizImage" accept="image/*" />
+                <p class="hint" style="margin-top: 0.35rem; font-size: 0.78rem">
+                  لأفضل نتيجة: صورة الشخص بخلفية شفافة؛ تُرسم فوق التدرّج في أسفل الصورة ثم النص في الأسفل.
+                </p>
               </div>
             </div>
 
@@ -2466,8 +2469,12 @@
       ctx.closePath();
     }
 
+    function arabicFontSpec(weight, px) {
+      return weight + " " + px + "px Cairo, Tajawal, Almarai, sans-serif";
+    }
+
     function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
-      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
+      ctx.font = arabicFontSpec("700", fontPx);
       var words = String(text || "")
         .replace(/\s+/g, " ")
         .trim()
@@ -2514,10 +2521,97 @@
       ctx.stroke();
     }
 
+    function drawImageContainInBox(ctx, img, boxX, boxY, boxW, boxH) {
+      var iw = img.naturalWidth;
+      var ih = img.naturalHeight;
+      if (!iw || !ih) return;
+      var ir = iw / ih;
+      var br = boxW / boxH;
+      var dw;
+      var dh;
+      var dx;
+      var dy;
+      if (ir > br) {
+        dw = boxW;
+        dh = boxW / ir;
+      } else {
+        dh = boxH;
+        dw = boxH * ir;
+      }
+      dx = boxX + (boxW - dw) / 2;
+      dy = boxY + (boxH - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+    }
+
+    /** تدرّج أزرق تحت موضع اللاعب (قبل طبقة المقصوص) */
+    function drawBlueSubjectShadow(ctx, W, panelTop) {
+      var cx = W / 2;
+      var cy = panelTop - 72;
+      var rx = W * 0.4;
+      var ry = 118;
+      var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * 1.05);
+      g.addColorStop(0, "rgba(55, 110, 200, 0.42)");
+      g.addColorStop(0.45, "rgba(25, 55, 120, 0.22)");
+      g.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.save();
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /**
+     * أكبر حجم خط يجعل النص الملفوف ضمن صندوق النص داخل الإطار الذهبي، مع توسيط عمودي.
+     */
+    function fitArabicHeadlineInYellowBox(ctx, rawText, W, H, panelTop, badgeH) {
+      var innerPadX = 76;
+      var maxW = W - 2 * innerPadX;
+      var textTop = Math.round(panelTop + badgeH * 0.52 + 18);
+      var textBottom = H - 56;
+      var maxH = textBottom - textTop;
+      if (maxH < 72) maxH = 72;
+      var text = String(rawText || "").trim();
+      if (!text) text = " ";
+      var minPx = 22;
+      var maxPx = 56;
+      var chosen = null;
+      for (var s = maxPx; s >= minPx; s--) {
+        ctx.font = arabicFontSpec("700", s);
+        var lines = wrapLinesArabic(ctx, text, maxW, s);
+        var gap = Math.round(s * 1.55);
+        var blockH = lines.length * gap;
+        if (blockH <= maxH) {
+          chosen = { fontPx: s, lines: lines, lineGap: gap };
+          break;
+        }
+      }
+      if (!chosen) {
+        ctx.font = arabicFontSpec("700", minPx);
+        chosen = {
+          fontPx: minPx,
+          lines: wrapLinesArabic(ctx, text, maxW, minPx),
+          lineGap: Math.round(minPx * 1.55)
+        };
+      }
+      var n = chosen.lines.length;
+      var midY = (textTop + textBottom) / 2;
+      var startY = midY - ((n - 1) * chosen.lineGap) / 2;
+      return {
+        fontPx: chosen.fontPx,
+        lines: chosen.lines,
+        lineGap: chosen.lineGap,
+        startY: startY,
+        textTop: textTop,
+        textBottom: textBottom
+      };
+    }
+
     /**
      * توليد صورة بوست إنستغرام ١٠٨٠×١٣٥٠ (نسبة ٤:٥) بأسلوب ٩٠+ المرجعي.
+     * cutoutImg: صورة اللاعب (يفضّل PNG بشفافية) من خطوة «صورة المنشور» — تُرسم فوق الظل الأزرق.
      */
-    function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr) {
+    function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr, cutoutImg) {
       var W = 1080;
       var H = 1350;
       canvas.width = W;
@@ -2527,13 +2621,32 @@
       ctx.fillRect(0, 0, W, H);
       drawImageCover(ctx, bgImg, W, H);
 
-      var fadeTop = Math.round(H * 0.48);
-      var fadeGrad = ctx.createLinearGradient(0, fadeTop, 0, H);
+      var panelRatio = 0.375;
+      var panelHeight = Math.round(H * panelRatio);
+      var panelTop = H - panelHeight;
+      var cornerR = 44;
+      var badgeW = 420;
+      var badgeH = 52;
+      var bx = (W - badgeW) / 2;
+      var by = panelTop - badgeH / 2;
+
+      drawBlueSubjectShadow(ctx, W, panelTop);
+
+      if (cutoutImg && cutoutImg.complete && cutoutImg.naturalWidth) {
+        var subjectPad = 16;
+        var boxH = Math.max(120, panelTop - subjectPad);
+        ctx.save();
+        drawImageContainInBox(ctx, cutoutImg, 0, subjectPad / 2, W, boxH);
+        ctx.restore();
+      }
+
+      var fadeStart = Math.round(H * 0.52);
+      var fadeGrad = ctx.createLinearGradient(0, fadeStart, 0, H);
       fadeGrad.addColorStop(0, "rgba(0,0,0,0)");
-      fadeGrad.addColorStop(0.55, "rgba(0,0,0,0.18)");
-      fadeGrad.addColorStop(1, "rgba(0,0,0,0.38)");
+      fadeGrad.addColorStop(0.65, "rgba(0,0,0,0.1)");
+      fadeGrad.addColorStop(1, "rgba(0,0,0,0.28)");
       ctx.fillStyle = fadeGrad;
-      ctx.fillRect(0, fadeTop, W, H - fadeTop);
+      ctx.fillRect(0, fadeStart, W, H - fadeStart);
 
       var transparentTpl =
         overlayTplImg &&
@@ -2544,18 +2657,6 @@
       if (overlayTplImg && overlayTplImg.complete && overlayTplImg.naturalWidth && transparentTpl) {
         ctx.drawImage(overlayTplImg, 0, 0, W, H);
       }
-
-      var panelRatio = 0.375;
-      var panelHeight = Math.round(H * panelRatio);
-      var panelTop = H - panelHeight;
-      var cornerR = 44;
-      var padX = 72;
-      var maxTW = W - padX * 2;
-
-      var badgeW = 420;
-      var badgeH = 52;
-      var bx = (W - badgeW) / 2;
-      var by = panelTop - badgeH / 2;
 
       if (!transparentTpl || !overlayTplImg) {
         roundRectTopCorners(ctx, 0, panelTop, W, panelHeight, cornerR);
@@ -2594,24 +2695,15 @@
         ctx.shadowBlur = 0;
       }
 
-      var fontPx = transparentTpl && overlayTplImg ? 44 : 50;
-      var lineGap = Math.round(fontPx * 1.55);
-      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
-      var lines = wrapLinesArabic(ctx, headlineAr, maxTW, fontPx);
-      var nLines = lines.length;
-      var contentTop = panelTop + 56;
-      var contentBottom = H - 52;
-      var contentMidY = (contentTop + contentBottom) / 2;
-      var startY = contentMidY - ((nLines - 1) * lineGap) / 2;
-
+      var fit = fitArabicHeadlineInYellowBox(ctx, headlineAr, W, H, panelTop, badgeH);
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
+      ctx.font = arabicFontSpec("700", fit.fontPx);
       ctx.shadowColor = "rgba(0,0,0,0.35)";
       ctx.shadowBlur = transparentTpl ? 5 : 3;
-      for (var li = 0; li < lines.length; li++) {
-        ctx.fillText(lines[li], W / 2, startY + li * lineGap);
+      for (var li = 0; li < fit.lines.length; li++) {
+        ctx.fillText(fit.lines[li], W / 2, fit.startY + li * fit.lineGap);
       }
       ctx.shadowBlur = 0;
       return true;
@@ -2674,7 +2766,7 @@
 
     function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
       var sys =
-        "أنت محرر رياضي عربي. أخرج فقرة إخبارية واحدة قصيرة لبوست إنستغرام (3 إلى 5 أسطر كحد أقصى)، بدون هاشتاغ، بدون عنوان منفصل، بدون عبارات مثل «إليك الخبر». اعتمد النص المصدر فقط.";
+        "أنت كاتب إعلانات رياضية عربية لمستوى عالمي. أخرج فقرة واحدة قصيرة جداً لبوست إنستغرام (٢–٤ أسطر قدر الإمكان)، بلغة واضحة وقوية، بدون هاشتاغ، بدون عنوان منفصل، بدون عبارات مثل «إليك الخبر» أو «في الخبر». اعتمد النص المصدر فقط. أعد الصياغة لتكون مناسبة لوحة إعلانية رسمية.";
       var usr = "النص:\n" + String(articleArabicText || "").trim().slice(0, 12000);
       var reqInit = {
         method: "POST",
@@ -5322,17 +5414,43 @@
               fr.readAsDataURL(fi);
             });
           }
+          var cutoutPromise = new Promise(function (resolve) {
+            var fc =
+              $("wizImage") && $("wizImage").files && $("wizImage").files[0]
+                ? $("wizImage").files[0]
+                : null;
+            if (!fc || !/^image\//i.test(fc.type || "")) {
+              resolve(null);
+              return;
+            }
+            var fr = new FileReader();
+            fr.onload = function () {
+              var im = new Image();
+              im.onload = function () {
+                resolve(im.naturalWidth ? im : null);
+              };
+              im.onerror = function () {
+                resolve(null);
+              };
+              im.src = fr.result;
+            };
+            fr.onerror = function () {
+              resolve(null);
+            };
+            fr.readAsDataURL(fc);
+          });
           btnGenPost.disabled = true;
-          Promise.all([bgPromise, overlayPromise])
+          Promise.all([bgPromise, overlayPromise, cutoutPromise])
             .then(function (parts) {
               var bgImg = parts[0];
               var ovImg = parts[1];
+              var cutImg = parts[2];
               return wizardOpenAIComposePostHeadline(secret, arText, null)
                 .catch(function () {
                   return arText.slice(0, 900);
                 })
                 .then(function (headline) {
-                  composePostStoryImage(cvPost, bgImg, ovImg, headline);
+                  composePostStoryImage(cvPost, bgImg, ovImg, headline, cutImg);
                   try {
                     cvPost.toBlob(function (blob) {
                       if (!blob || !dlPost) return;
