@@ -1966,10 +1966,9 @@
               <div id="wizPostStorySection" class="wiz-post-story-section" hidden>
                 <h4 class="wiz-post-story-title">توليد صورة البوست (نمط 90+)</h4>
                 <p class="hint" style="font-size: 0.8rem; margin-bottom: 0.65rem">
-                  الخلفية من الرابط أو «صورة الخبر»؛ ظل أزرق ثم <strong>صورة المنشور</strong> (يفضّل
-                  <strong>PNG مقصوص</strong>) فوق الطبقات. عند الضغط على «توليد صورة البوست» يُرسل التطبيق إلى OpenAI
-                  <strong>نموذج مواصفات التصميم</strong> (عرض آمن، عدد أسطر، فواصل أسطر، أسلوب شاشة) فيُعاد صياغة النص ليتناسب مع الإطار الذهبي، ثم يُرسم تلقائياً على اللوحة ١٠٨٠×١٣٥٠.
-                  من «القوالب» يمكن استخدام PNG إطار؛ شفافية الوسط تمرّر الصورة.
+                  يُركَّب إطار عمودي مشابه للنماذج: صورة الخلفية من الرابط أو من صورة الخبر، ثم نص عربي مختصر عبر OpenAI.
+                  ارفع من «القوالب» ملف <strong>PNG</strong> ليُستخدم كطبقة فوق الصورة — يُفعَّل تلقائياً كقالب البوست.
+                  الأفضل تصدير PNG مع <strong>شفافية</strong> في وسط الإطار حيث تظهر صورة اللاعب.
                 </p>
                 <div class="wiz-field-actions" style="flex-wrap: wrap; gap: 0.5rem">
                   <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnGeneratePostImage">
@@ -2003,11 +2002,8 @@
             <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle5">
               <h3 id="wizTitle5">رفع الصورة</h3>
               <div class="wiz-field">
-                <label for="wizImage">صورة المنشور (اللاعب / مقصوص PNG)</label>
+                <label for="wizImage">صورة المنشور</label>
                 <input type="file" id="wizImage" accept="image/*" />
-                <p class="hint" style="margin-top: 0.35rem; font-size: 0.78rem">
-                  لأفضل نتيجة: صورة الشخص بخلفية شفافة؛ تُرسم فوق التدرّج في أسفل الصورة ثم النص في الأسفل.
-                </p>
               </div>
             </div>
 
@@ -2257,95 +2253,6 @@
     var IDB_KEY_TEMPLATE_PREFIX = "90plus_template_file_";
     var TEMPLATE_FILE_MAX_BYTES = 5 * 1024 * 1024;
 
-    /**
-     * نموذج مواصفات التصميم — يُدمَج في طلب OpenAI لضبط النص حسب منطقة الرسم الفعلية (هوامش ذهبية، عرض آمن).
-     * الأرقام تتوافق مع منطقة النص في fitArabicHeadlineInYellowBox (~٧٤٠px عرض آمن).
-     */
-    function getPostCanvasOpenAILayoutBrief() {
-      return (
-        "【مواصفات منطقة النص على صورة البوست — يلتزم بها النص الذي تخرجه】\n" +
-        "• المقاس: صورة ١٠٨٠×١٣٥٠ بكسل (إنستغرام ٤:٥). النص داخل المستطيل السفلي ذي الحدود الذهبية، أسفل شارة «# ninety plus».\n" +
-        "• الهامش الجانبي: يجب أن يبقى فراغ واضح بين النص وبين الخط الذهبي الأيسر والأيمن — لا تكتب أسطراً أعرض من حوالي ٢٨–٣٢ حرفاً عربياً لكل سطر (يعادل عرضاً رسماً نحو ٧٤٠ بكسل بخط عريض).\n" +
-        "• عدد الأسطر: ٣–٤ أسطر مثالية؛ سطران إذا كان الخبر قصيراً جداً؛ ٥ أسطر كحدّ أقصى عند الضرورة.\n" +
-        "• التقسيم: كل جملة أو فكرة في سطر مستقل؛ استخدم سطراً جديداً (Enter) بين الأسطر. لا تدمج فقرة طويلة في سطر واحد.\n" +
-        "• التوازن: قارب طول الأسطر في عدد الأحرف قدر الإمكان حتى يبدو النص مثل بوست قناة احترافية.\n" +
-        "• المحظورات: بدون هاشتاغ؛ بدون عنوان مستقل؛ بدون «إليك الخبر» أو حشو؛ بدون أرقام/رموز تبدأ بها السطر.\n" +
-        "• الأسلوب: عربية فصحى إخبارية موجزة، صوت شاشة رياضية عالمية، واضحة عند التمرير السريع.\n" +
-        "• الهدف التقني: التطبيق يضبط حجم الخط تلقائياً داخل المستطيل؛ النص الموزّع والجمل القصيرة يُظهر خطاً أكبر وأوضح."
-      );
-    }
-
-    /** نقطة تقسيم مناسبة ضمن segment (مسافة، فاصلة عربية، إلخ) */
-    function findArabicLineCut(segment, maxLen) {
-      if (segment.length <= maxLen) return segment.length;
-      var window = segment.slice(0, maxLen + 1);
-      var sp = window.lastIndexOf(" ");
-      var c1 = window.lastIndexOf("،");
-      var c2 = window.lastIndexOf("؛");
-      var c3 = window.lastIndexOf(".");
-      var cq = window.lastIndexOf("؟");
-      var ce = window.lastIndexOf("!");
-      var cc = window.lastIndexOf(":");
-      var cut = Math.max(sp, c1, c2, c3, cq, ce, cc);
-      if (cut < Math.floor(maxLen * 0.35)) cut = maxLen;
-      return cut > 0 ? cut : maxLen;
-    }
-
-    /**
-     * إعادة تقسيم النص محلياً حتى لا تعتمد على جودة النموذج فقط — أسطر متوازنة وعرض آمن.
-     */
-    function reflowHeadlineForPostLayout(rawText, maxChars) {
-      var maxLen = Math.max(20, Math.min(32, maxChars || 28));
-      var t = String(rawText || "")
-        .trim()
-        .replace(/\r\n/g, "\n")
-        .replace(/^```[\w]*\s*/m, "")
-        .replace(/\s*```$/m, "")
-        .trim();
-      if (!t) return "";
-      var parts = t.split(/\n+/);
-      var out = [];
-      for (var p = 0; p < parts.length; p++) {
-        var seg = parts[p].replace(/^\s*[\-\*•]\s*/, "").trim();
-        if (!seg) continue;
-        while (seg.length > maxLen) {
-          var cut = findArabicLineCut(seg, maxLen);
-          out.push(seg.slice(0, cut).trim());
-          seg = seg.slice(cut).trim().replace(/^،\s*/, "");
-        }
-        if (seg) out.push(seg);
-      }
-      return out.join("\n");
-    }
-
-    /** إزالة أحرف الاتجاه المخفية والمسافات الزائدة قبل تلخيص النص للصورة */
-    function normalizeArabicSourceForPostHeadline(text) {
-      return String(text || "")
-        .replace(/\r\n/g, "\n")
-        .replace(/[\u200e\u200f\u202a-\u202e]/g, "")
-        .replace(/[ \t\u00a0]+/g, " ")
-        .replace(/\n[ \t]+/g, "\n")
-        .replace(/[ \t]+\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-    }
-
-    function ensureCanvasFontsLoaded() {
-      if (typeof document === "undefined" || !document.fonts) {
-        return Promise.resolve();
-      }
-      var loads = [];
-      try {
-        loads.push(document.fonts.load('700 52px "Cairo", "Almarai", sans-serif'));
-        loads.push(document.fonts.load('600 24px "Cairo", "Almarai", sans-serif'));
-        loads.push(document.fonts.load('700 48px "Cairo", "Almarai", sans-serif'));
-      } catch (eL) {}
-      loads.push(document.fonts.ready);
-      return Promise.all(loads.map(function (p) {
-        return Promise.resolve(p).catch(function () {});
-      }));
-    }
-
     function idbOpen() {
       return new Promise(function (resolve, reject) {
         var req = indexedDB.open(IDB_NAME, IDB_VERSION);
@@ -2559,13 +2466,8 @@
       ctx.closePath();
     }
 
-    function arabicFontSpec(weight, px) {
-      return weight + " " + px + "px Cairo, Almarai, sans-serif";
-    }
-
     function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
-      ctx.font = arabicFontSpec("700", fontPx);
-      var safeW = Math.max(72, maxWidth * 0.925);
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
       var words = String(text || "")
         .replace(/\s+/g, " ")
         .trim()
@@ -2575,7 +2477,7 @@
       for (var i = 0; i < words.length; i++) {
         var w = words[i];
         var next = cur ? cur + " " + w : w;
-        if (ctx.measureText(next).width > safeW && cur) {
+        if (ctx.measureText(next).width > maxWidth && cur) {
           lines.push(cur);
           cur = w;
         } else {
@@ -2583,88 +2485,7 @@
         }
       }
       if (cur) lines.push(cur);
-      return expandOverwideLines(ctx, lines.length ? lines : [""], safeW);
-    }
-
-    /** تجهيز النص: أسطر من OpenAI، أو تقسيم الجمل الطويلة عند علامات الترقيم العربية */
-    function preprocessHeadlineForLayout(text) {
-      var t = String(text || "")
-        .trim()
-        .replace(/\r\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n");
-      if (t.indexOf("\n") >= 0) return t;
-      if (t.length > 55) {
-        t = t.replace(/([،؛؟!.])\s+/g, "$1\n");
-      }
-      return t;
-    }
-
-    /** لفّ كل مقطع (سطر من OpenAI) ثم دمج الأسطر — لمظهر قنوات احترافية */
-    function wrapHeadlineForPost(ctx, text, maxW, fontPx) {
-      var raw = preprocessHeadlineForLayout(text);
-      var chunks = raw
-        .split("\n")
-        .map(function (s) {
-          return s.trim();
-        })
-        .filter(function (s) {
-          return s.length > 0;
-        });
-      if (!chunks.length) chunks = [String(text || "").trim() || " "];
-      var all = [];
-      for (var ci = 0; ci < chunks.length; ci++) {
-        var sub = wrapLinesArabic(ctx, chunks[ci], maxW, fontPx);
-        for (var si = 0; si < sub.length; si++) all.push(sub[si]);
-      }
-      return all.length ? all : [""];
-    }
-
-    /** للتحقق أن الكتلة تدخل في المساحة (متشدد قليلاً) */
-    function blockHeightFitCheck(nLines, fontPx, lineHeight) {
-      if (nLines < 1) nLines = 1;
-      return nLines * lineHeight + Math.ceil(fontPx * 0.22);
-    }
-
-    /** لتوسيط عمودي أدق بصرياً دون رفع الكتلة لأعلى المستطيل */
-    function blockHeightVisualCenter(nLines, fontPx, lineHeight) {
-      if (nLines < 1) nLines = 1;
-      return nLines * lineHeight + Math.ceil(fontPx * 0.06);
-    }
-
-    /** تقسيم أي سطر أعرض من الحدّ إلى عدة أسطر (كلمات طويلة دون مسافات) */
-    function expandOverwideLines(ctx, lines, maxWidth) {
-      var out = [];
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (!line) {
-          out.push("");
-          continue;
-        }
-        if (ctx.measureText(line).width <= maxWidth) {
-          out.push(line);
-          continue;
-        }
-        var rest = line;
-        while (rest.length) {
-          var lo = 1;
-          var hi = rest.length;
-          var best = 1;
-          while (lo <= hi) {
-            var mid = (lo + hi) >> 1;
-            var sub = rest.slice(0, mid);
-            if (ctx.measureText(sub).width <= maxWidth) {
-              best = mid;
-              lo = mid + 1;
-            } else {
-              hi = mid - 1;
-            }
-          }
-          if (best < 1) best = 1;
-          out.push(rest.slice(0, best));
-          rest = rest.slice(best);
-        }
-      }
-      return out.length ? out : [""];
+      return lines.length ? lines : [""];
     }
 
     /** مستطيل سفلي بحواف علوية مستديرة فقط (لوحة نص البوست) */
@@ -2693,122 +2514,10 @@
       ctx.stroke();
     }
 
-    function drawImageContainInBox(ctx, img, boxX, boxY, boxW, boxH) {
-      var iw = img.naturalWidth;
-      var ih = img.naturalHeight;
-      if (!iw || !ih) return;
-      var ir = iw / ih;
-      var br = boxW / boxH;
-      var dw;
-      var dh;
-      var dx;
-      var dy;
-      if (ir > br) {
-        dw = boxW;
-        dh = boxW / ir;
-      } else {
-        dh = boxH;
-        dw = boxH * ir;
-      }
-      dx = boxX + (boxW - dw) / 2;
-      dy = boxY + (boxH - dh) / 2;
-      ctx.drawImage(img, dx, dy, dw, dh);
-    }
-
-    /** تدرّج أزرق تحت موضع اللاعب (قبل طبقة المقصوص) */
-    function drawBlueSubjectShadow(ctx, W, panelTop) {
-      var cx = W / 2;
-      var cy = panelTop - 72;
-      var rx = W * 0.4;
-      var ry = 118;
-      var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry) * 1.05);
-      g.addColorStop(0, "rgba(55, 110, 200, 0.42)");
-      g.addColorStop(0.45, "rgba(25, 55, 120, 0.22)");
-      g.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.save();
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    /**
-     * ضبط النص داخل منطقة آمنة بعيداً عن الخطوط الصفراء من كل الجهات، وتوسيط عمودي داخل المستطيل.
-     */
-    function fitArabicHeadlineInYellowBox(ctx, rawText, W, H, panelTop, badgeH) {
-      var marginFromYellowX = 142;
-      var extraWidthSafety = 52;
-      var maxW = Math.max(96, W - 2 * marginFromYellowX - extraWidthSafety);
-      var badgeBottom = panelTop + badgeH * 0.5;
-      var padBelowBadge = 76;
-      var padFromBottomEdge = 92;
-      var zoneTop = Math.round(badgeBottom + padBelowBadge);
-      var zoneBottom = H - padFromBottomEdge;
-      var maxH = zoneBottom - zoneTop;
-      if (maxH < 96) maxH = 96;
-      var text = String(rawText || "").trim();
-      if (!text) text = " ";
-      var minPx = 18;
-      var maxPx = 50;
-      var chosen = null;
-      for (var s = maxPx; s >= minPx; s--) {
-        ctx.font = arabicFontSpec("700", s);
-        var lines = wrapHeadlineForPost(ctx, text, maxW, s);
-        var lineHeight = Math.round(s * 1.5);
-        var blockH = blockHeightFitCheck(lines.length, s, lineHeight);
-        if (blockH > maxH) continue;
-        var ok = true;
-        var wCap = maxW * 0.992;
-        for (var li = 0; li < lines.length; li++) {
-          if (ctx.measureText(lines[li]).width > wCap) {
-            ok = false;
-            break;
-          }
-        }
-        if (!ok) continue;
-        chosen = {
-          fontPx: s,
-          lines: lines,
-          lineHeight: lineHeight,
-          blockFit: blockH,
-          blockVis: blockHeightVisualCenter(lines.length, s, lineHeight)
-        };
-        break;
-      }
-      if (!chosen) {
-        ctx.font = arabicFontSpec("700", minPx);
-        var linesMin = wrapHeadlineForPost(ctx, text, maxW, minPx);
-        var lhMin = Math.round(minPx * 1.5);
-        chosen = {
-          fontPx: minPx,
-          lines: linesMin,
-          lineHeight: lhMin,
-          blockFit: blockHeightFitCheck(linesMin.length, minPx, lhMin),
-          blockVis: blockHeightVisualCenter(linesMin.length, minPx, lhMin)
-        };
-      }
-      var bhVis = chosen.blockVis;
-      var bhFit = chosen.blockFit;
-      var lineTop = zoneTop + (maxH - bhVis) / 2;
-      if (lineTop + bhFit > zoneBottom) lineTop = zoneBottom - bhFit;
-      if (lineTop < zoneTop) lineTop = zoneTop;
-      return {
-        fontPx: chosen.fontPx,
-        lines: chosen.lines,
-        lineHeight: chosen.lineHeight,
-        lineTop: lineTop,
-        textTop: zoneTop,
-        textBottom: zoneBottom
-      };
-    }
-
     /**
      * توليد صورة بوست إنستغرام ١٠٨٠×١٣٥٠ (نسبة ٤:٥) بأسلوب ٩٠+ المرجعي.
-     * cutoutImg: صورة اللاعب (يفضّل PNG بشفافية) من خطوة «صورة المنشور» — تُرسم فوق الظل الأزرق.
      */
-    function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr, cutoutImg) {
-      headlineAr = reflowHeadlineForPostLayout(headlineAr || "", 28);
+    function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr) {
       var W = 1080;
       var H = 1350;
       canvas.width = W;
@@ -2818,24 +2527,13 @@
       ctx.fillRect(0, 0, W, H);
       drawImageCover(ctx, bgImg, W, H);
 
-      var panelRatio = 0.375;
-      var panelHeight = Math.round(H * panelRatio);
-      var panelTop = H - panelHeight;
-      var cornerR = 44;
-      var badgeW = 420;
-      var badgeH = 52;
-      var bx = (W - badgeW) / 2;
-      var by = panelTop - badgeH / 2;
-
-      drawBlueSubjectShadow(ctx, W, panelTop);
-
-      var fadeStart = Math.round(H * 0.52);
-      var fadeGrad = ctx.createLinearGradient(0, fadeStart, 0, H);
+      var fadeTop = Math.round(H * 0.48);
+      var fadeGrad = ctx.createLinearGradient(0, fadeTop, 0, H);
       fadeGrad.addColorStop(0, "rgba(0,0,0,0)");
-      fadeGrad.addColorStop(0.65, "rgba(0,0,0,0.1)");
-      fadeGrad.addColorStop(1, "rgba(0,0,0,0.28)");
+      fadeGrad.addColorStop(0.55, "rgba(0,0,0,0.18)");
+      fadeGrad.addColorStop(1, "rgba(0,0,0,0.38)");
       ctx.fillStyle = fadeGrad;
-      ctx.fillRect(0, fadeStart, W, H - fadeStart);
+      ctx.fillRect(0, fadeTop, W, H - fadeTop);
 
       var transparentTpl =
         overlayTplImg &&
@@ -2846,6 +2544,18 @@
       if (overlayTplImg && overlayTplImg.complete && overlayTplImg.naturalWidth && transparentTpl) {
         ctx.drawImage(overlayTplImg, 0, 0, W, H);
       }
+
+      var panelRatio = 0.375;
+      var panelHeight = Math.round(H * panelRatio);
+      var panelTop = H - panelHeight;
+      var cornerR = 44;
+      var padX = 72;
+      var maxTW = W - padX * 2;
+
+      var badgeW = 420;
+      var badgeH = 52;
+      var bx = (W - badgeW) / 2;
+      var by = panelTop - badgeH / 2;
 
       if (!transparentTpl || !overlayTplImg) {
         roundRectTopCorners(ctx, 0, panelTop, W, panelHeight, cornerR);
@@ -2863,7 +2573,7 @@
         roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
         ctx.stroke();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "600 24px Cairo, Almarai, sans-serif";
+        ctx.font = "600 24px Cairo, Tajawal, Almarai, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.shadowBlur = 0;
@@ -2884,27 +2594,24 @@
         ctx.shadowBlur = 0;
       }
 
-      if (cutoutImg && cutoutImg.complete && cutoutImg.naturalWidth) {
-        var subjectPad2 = 12;
-        var boxH2 = Math.max(120, panelTop - subjectPad2);
-        ctx.save();
-        drawImageContainInBox(ctx, cutoutImg, 0, subjectPad2 / 2, W, boxH2);
-        ctx.restore();
-      }
+      var fontPx = transparentTpl && overlayTplImg ? 44 : 50;
+      var lineGap = Math.round(fontPx * 1.55);
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
+      var lines = wrapLinesArabic(ctx, headlineAr, maxTW, fontPx);
+      var nLines = lines.length;
+      var contentTop = panelTop + 56;
+      var contentBottom = H - 52;
+      var contentMidY = (contentTop + contentBottom) / 2;
+      var startY = contentMidY - ((nLines - 1) * lineGap) / 2;
 
-      var fit = fitArabicHeadlineInYellowBox(ctx, headlineAr, W, H, panelTop, badgeH);
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      try {
-        ctx.direction = "rtl";
-      } catch (eDir) {}
-      ctx.font = arabicFontSpec("700", fit.fontPx);
+      ctx.textBaseline = "middle";
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
       ctx.shadowColor = "rgba(0,0,0,0.35)";
       ctx.shadowBlur = transparentTpl ? 5 : 3;
-      var lx = W / 2;
-      for (var li = 0; li < fit.lines.length; li++) {
-        ctx.fillText(fit.lines[li], lx, fit.lineTop + li * fit.lineHeight);
+      for (var li = 0; li < lines.length; li++) {
+        ctx.fillText(lines[li], W / 2, startY + li * lineGap);
       }
       ctx.shadowBlur = 0;
       return true;
@@ -2966,37 +2673,26 @@
     }
 
     function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
-      var layoutBrief = getPostCanvasOpenAILayoutBrief();
       var sys =
-        "أنت محرر نصوص شاشة رياضية عربية. اتبع مواصفات التصميم التالية بدقة.\n\n" +
-        layoutBrief +
-        "\n\nإخراج إلزامي بصيغة JSON فقط (بدون Markdown وبدون نص قبل أو بعد JSON):\n" +
-        '{ "lines": [ "سطر1", "سطر2", "سطر3" ] }\n' +
-        "— المفتاح lines فقط: مصفوفة نصوص عربية، كل عنصر سطراً واحداً في الصورة.\n" +
-        "— ٢–٥ عناصر في المصفوفة عادةً؛ لا تضع سطراً يتجاوز ~٣٢ حرفاً.\n" +
-        "— أعد صياغة معنى المصدر باختصار إخباري إن لزم؛ بدون هاشتاغ أو عنوان.\n" +
-        "— أخرج JSON صالحاً فقط.";
-      var usr = "صغ المصدر في الحقل lines:\n\n" + String(articleArabicText || "").trim().slice(0, 12000);
-      var bodyObj = {
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: sys },
-          { role: "user", content: usr }
-        ],
-        temperature: 0.2,
-        max_tokens: 900,
-        response_format: { type: "json_object" }
-      };
+        "أنت محرر رياضي عربي. أخرج فقرة إخبارية واحدة قصيرة لبوست إنستغرام (3 إلى 5 أسطر كحد أقصى)، بدون هاشتاغ، بدون عنوان منفصل، بدون عبارات مثل «إليك الخبر». اعتمد النص المصدر فقط.";
+      var usr = "النص:\n" + String(articleArabicText || "").trim().slice(0, 12000);
       var reqInit = {
         method: "POST",
         headers: {
           Authorization: "Bearer " + secret,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(bodyObj)
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: sys },
+            { role: "user", content: usr }
+          ],
+          temperature: 0.35,
+          max_tokens: 600
+        })
       };
       if (signal) reqInit.signal = signal;
-      var srcFallback = String(articleArabicText || "").trim();
       return fetch("https://api.openai.com/v1/chat/completions", reqInit).then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok) {
@@ -3006,29 +2702,8 @@
             throw err;
           }
           var ch = data.choices && data.choices[0] && data.choices[0].message;
-          var raw = ch && ch.content ? String(ch.content).trim() : "";
-          var joined = "";
-          try {
-            var obj = JSON.parse(raw);
-            if (obj && Array.isArray(obj.lines) && obj.lines.length) {
-              joined = obj.lines
-                .map(function (L) {
-                  return String(L != null ? L : "").trim();
-                })
-                .filter(function (s) {
-                  return s.length > 0;
-                })
-                .join("\n");
-            }
-          } catch (eJ) {}
-          if (!joined) {
-            joined = raw
-              .replace(/^```[a-zA-Z]*\s*/m, "")
-              .replace(/\s*```$/m, "")
-              .trim();
-          }
-          if (!joined) joined = srcFallback;
-          return reflowHeadlineForPostLayout(joined, 28);
+          var txt = ch && ch.content ? String(ch.content).trim() : "";
+          return txt || String(articleArabicText || "").trim();
         });
       });
     }
@@ -4924,9 +4599,7 @@
               .then(function (pair) {
                 var bg = pair[0];
                 var ov = pair[1];
-                return ensureCanvasFontsLoaded().then(function () {
-                  composePostStoryImage(cnvA, bg, ov, textPreview);
-                });
+                composePostStoryImage(cnvA, bg, ov, textPreview);
               })
               .catch(function () {
                 setTemplatesFeedback(
@@ -5583,7 +5256,6 @@
             ($("wizTranslation") && $("wizTranslation").value.trim()) ||
             ($("wizRewrite") && $("wizRewrite").value.trim()) ||
             "";
-          arText = normalizeArabicSourceForPostHeadline(arText);
           if (arText.length < 8) {
             if (fbPost) {
               fbPost.textContent =
@@ -5650,47 +5322,17 @@
               fr.readAsDataURL(fi);
             });
           }
-          var cutoutPromise = new Promise(function (resolve) {
-            var fc =
-              $("wizImage") && $("wizImage").files && $("wizImage").files[0]
-                ? $("wizImage").files[0]
-                : null;
-            if (!fc || !/^image\//i.test(fc.type || "")) {
-              resolve(null);
-              return;
-            }
-            var fr = new FileReader();
-            fr.onload = function () {
-              var im = new Image();
-              im.onload = function () {
-                resolve(im.naturalWidth ? im : null);
-              };
-              im.onerror = function () {
-                resolve(null);
-              };
-              im.src = fr.result;
-            };
-            fr.onerror = function () {
-              resolve(null);
-            };
-            fr.readAsDataURL(fc);
-          });
           btnGenPost.disabled = true;
-          Promise.all([bgPromise, overlayPromise, cutoutPromise])
+          Promise.all([bgPromise, overlayPromise])
             .then(function (parts) {
               var bgImg = parts[0];
               var ovImg = parts[1];
-              var cutImg = parts[2];
               return wizardOpenAIComposePostHeadline(secret, arText, null)
                 .catch(function () {
-                  return reflowHeadlineForPostLayout(arText.slice(0, 900), 28);
+                  return arText.slice(0, 900);
                 })
                 .then(function (headline) {
-                  return ensureCanvasFontsLoaded().then(function () {
-                    composePostStoryImage(cvPost, bgImg, ovImg, headline, cutImg);
-                  });
-                })
-                .then(function () {
+                  composePostStoryImage(cvPost, bgImg, ovImg, headline);
                   try {
                     cvPost.toBlob(function (blob) {
                       if (!blob || !dlPost) return;
