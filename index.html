@@ -819,7 +819,7 @@
       margin-top: 0.5rem;
     }
 
-    /* بطاقة تعرض الخطوات العشر كاملة بدون تمرير أفقي/عمودي داخلها */
+    /* بطاقة تعرض خريطة الخطوات كاملة بدون تمرير أفقي/عمودي داخلها */
     .wizard-steps-shell {
       padding: 1rem 1rem 1.1rem;
       margin-bottom: 1rem;
@@ -1527,14 +1527,14 @@
 
         <div id="createWizard" class="create-wizard">
           <div class="wizard-steps-shell">
-            <p class="wizard-steps-heading">خريطة المسار — 10 خطوات</p>
+            <p class="wizard-steps-heading">خريطة المسار — 7 خطوات</p>
             <div class="wizard-strip-wrap">
               <div class="wizard-strip" id="wizardStrip" role="list" aria-label="خطوات إنشاء المنشور"></div>
             </div>
           </div>
 
           <div class="wizard-progress">
-            <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">8</span> — <span id="wizardStepTitle">إدراج خبر</span></span>
+            <span class="wizard-progress-text">الخطوة <span id="wizardStepNum">1</span> من <span id="wizardStepTotal">7</span> — <span id="wizardStepTitle">إدراج خبر</span></span>
             <div class="wizard-progress-bar">
               <div class="wizard-progress-fill" id="wizardProgressFill"></div>
             </div>
@@ -1648,17 +1648,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle4">
-              <h3 id="wizTitle4">اختيار القالب</h3>
-              <div class="wiz-field">
-                <label for="wizTemplate">القالب</label>
-                <select id="wizTemplate">
-                  <option value="">— اختر قالباً —</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="wizard-pane" data-step="3" role="group" aria-labelledby="wizTitle5">
+            <div class="wizard-pane" data-step="2" role="group" aria-labelledby="wizTitle5">
               <h3 id="wizTitle5">رفع الصورة</h3>
               <div class="wiz-field">
                 <label for="wizImage">صورة المنشور</label>
@@ -1666,7 +1656,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="4" role="group" aria-labelledby="wizTitle6">
+            <div class="wizard-pane" data-step="3" role="group" aria-labelledby="wizTitle6">
               <h3 id="wizTitle6">استخراج القالب</h3>
               <div class="wiz-field">
                 <label for="wizExtractTemplate">محتوى مستخرج وفق القالب</label>
@@ -1674,7 +1664,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="5" role="group" aria-labelledby="wizTitle7">
+            <div class="wizard-pane" data-step="4" role="group" aria-labelledby="wizTitle7">
               <h3 id="wizTitle7">تصدير كابشن</h3>
               <div class="wiz-field">
                 <label for="wizCaption">نص الكابشن</label>
@@ -1682,7 +1672,7 @@
               </div>
             </div>
 
-            <div class="wizard-pane" data-step="6" role="group" aria-labelledby="wizTitle8">
+            <div class="wizard-pane" data-step="5" role="group" aria-labelledby="wizTitle8">
               <h3 id="wizTitle8">عرض قبل التصدير</h3>
               <p class="hint">راجع الملخص أدناه قبل المتابعة.</p>
               <div class="wiz-preview-summary" id="wizPreviewSummary"></div>
@@ -1692,7 +1682,7 @@
               </label>
             </div>
 
-            <div class="wizard-pane" data-step="7" role="group" aria-labelledby="wizTitle9">
+            <div class="wizard-pane" data-step="6" role="group" aria-labelledby="wizTitle9">
               <h3 id="wizTitle9">استخراج</h3>
               <div class="wiz-field">
                 <label for="wizFinalExport">الناتج النهائي</label>
@@ -1703,6 +1693,10 @@
               </div>
             </div>
           </div>
+
+          <select id="wizTemplate" class="visually-hidden" aria-hidden="true" tabindex="-1">
+            <option value="">— اختر قالباً —</option>
+          </select>
 
           <p class="wizard-error" id="wizardError" role="alert"></p>
           <p class="wizard-success" id="wizardSuccess" role="status" hidden></p>
@@ -1721,7 +1715,7 @@
       <div class="tab-panel" id="panel-templates" role="region" aria-labelledby="tab-templates">
         <h2>القوالب</h2>
         <p class="hint" style="margin-bottom: 1.25rem">
-          أضف قوالبك الخاصة؛ تُحفظ في هذا المتصفح وتظهر في خطوة «اختيار القالب» عند إنشاء منشور. القوالب المدمجة ثابتة ولا تُحذف.
+          أضف قوالبك الخاصة؛ تُحفظ في هذا المتصفح. القوالب المدمجة ثابتة ولا تُحذف.
         </p>
 
         <section class="templates-section">
@@ -3546,7 +3540,6 @@
       var STEP_LABELS = [
         "إدراج خبر",
         "إعادة صياغة",
-        "اختيار القالب",
         "رفع الصورة",
         "استخراج القالب",
         "تصدير كابشن",
@@ -3643,38 +3636,32 @@
             }
             return true;
           case 2:
-            if (!$("wizTemplate").value) {
-              setErr("اختر قالباً من القائمة.");
-              return false;
-            }
-            return true;
-          case 3:
             if (!$("wizImage").files || !$("wizImage").files[0]) {
               setErr("ارفع صورة للمتابعة.");
               return false;
             }
             return true;
-          case 4:
+          case 3:
             t = ($("wizExtractTemplate").value || "").trim();
             if (t.length < 3) {
               setErr("أدخل نص استخراج القالب.");
               return false;
             }
             return true;
-          case 5:
+          case 4:
             t = ($("wizCaption").value || "").trim();
             if (t.length < 2) {
               setErr("أدخل نص الكابشن.");
               return false;
             }
             return true;
-          case 6:
+          case 5:
             if (!$("wizPreviewOk").checked) {
               setErr("يُرجى التأكيد بعد مراجعة المعاينة.");
               return false;
             }
             return true;
-          case 7:
+          case 6:
             t = ($("wizFinalExport").value || "").trim();
             if (!t) {
               setErr("أدخل الناتج النهائي أو اضغط «توليد الناتج من الخطوات».");
@@ -3702,7 +3689,10 @@
         var tr = ($("wizTranslation").value || "").trim();
         var rw = ($("wizRewrite").value || "").trim();
         var tpl = $("wizTemplate");
-        var tplText = tpl && tpl.options[tpl.selectedIndex] ? tpl.options[tpl.selectedIndex].text : "";
+        var tplText = "—";
+        if (tpl && tpl.value && tpl.selectedIndex >= 0 && tpl.options[tpl.selectedIndex]) {
+          tplText = tpl.options[tpl.selectedIndex].text || "—";
+        }
         var img = $("wizImage").files && $("wizImage").files[0];
         var imgName = img ? img.name : "—";
         var ex = ($("wizExtractTemplate").value || "").trim();
@@ -3776,7 +3766,7 @@
         $("wizardNext").hidden = currentStep >= total - 1;
         $("wizardFinish").hidden = currentStep !== total - 1;
 
-        if (currentStep === 6) {
+        if (currentStep === 5) {
           $("wizPreviewSummary").textContent = buildPreviewText();
         }
       }
@@ -4113,7 +4103,7 @@
       syncSourceTypeUI();
 
       $("wizardFinish").addEventListener("click", function () {
-        if (!validateStep(7)) return;
+        if (!validateStep(6)) return;
         if (okBox) {
           okBox.hidden = false;
           okBox.textContent = "تم إكمال مسار إنشاء المنشور بنجاح.";
