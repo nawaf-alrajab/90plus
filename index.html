@@ -644,6 +644,39 @@
       max-width: 100%;
     }
 
+    .wiz-post-story-section {
+      margin-top: 1.5rem;
+      padding: 1rem 0.9rem 1.15rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 195, 0, 0.25);
+      background: rgba(0, 8, 20, 0.4);
+    }
+
+    .wiz-post-story-title {
+      margin: 0 0 0.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--bus-yellow, #ffc300);
+    }
+
+    .wiz-post-canvas-wrap {
+      margin-top: 0.75rem;
+      text-align: center;
+      max-height: min(70vh, 640px);
+      overflow: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 195, 0, 0.2);
+      background: rgba(0, 0, 0, 0.35);
+    }
+
+    .wiz-post-canvas-wrap canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      vertical-align: top;
+    }
+
     .settings-actions {
       display: flex;
       flex-wrap: wrap;
@@ -1692,6 +1725,33 @@
                   <img id="wizSourceImagePreview" alt="معاينة صورة الخبر" />
                 </div>
               </div>
+
+              <div id="wizPostStorySection" class="wiz-post-story-section" hidden>
+                <h4 class="wiz-post-story-title">توليد صورة البوست (نمط 90+)</h4>
+                <p class="hint" style="font-size: 0.8rem; margin-bottom: 0.65rem">
+                  يُركَّب إطار عمودي مشابه للنماذج: صورة الخلفية من الرابط أو من صورة الخبر، ثم نص عربي مختصر عبر OpenAI.
+                  ارفع من «القوالب» ملف <strong>PNG</strong> ليُستخدم كطبقة فوق الصورة — يُفعَّل تلقائياً كقالب البوست.
+                  الأفضل تصدير PNG مع <strong>شفافية</strong> في وسط الإطار حيث تظهر صورة اللاعب.
+                </p>
+                <div class="wiz-field-actions" style="flex-wrap: wrap; gap: 0.5rem">
+                  <button type="button" class="wizard-btn wizard-btn--extract" id="wizBtnGeneratePostImage">
+                    توليد صورة البوست
+                  </button>
+                  <a
+                    class="wizard-btn wizard-btn--merge"
+                    id="wizBtnDownloadPostImage"
+                    download="90plus-post.png"
+                    href="#"
+                    hidden
+                  >
+                    تحميل PNG
+                  </a>
+                </div>
+                <div class="wiz-post-canvas-wrap">
+                  <canvas id="wizPostCanvas" width="1080" height="1920"></canvas>
+                </div>
+                <p class="wiz-extract-feedback" id="wizPostCanvasFeedback" role="status"></p>
+              </div>
             </div>
 
             <div class="wizard-pane" data-step="1" role="group" aria-labelledby="wizTitle3">
@@ -1940,6 +2000,8 @@
     var OPENAI_VERIFIED_AT_KEY = "90plus_openai_verified_at";
     var USERS_STORAGE_KEY = "90plus_users_json";
     var TEMPLATES_STORAGE_KEY = "90plus_custom_templates_json";
+    var ACTIVE_POST_TEMPLATE_ID_KEY = "90plus_active_post_template_id";
+    var SESSION_EXTRACT_IMAGE_URL_KEY = "90plus_wizard_extract_image_url";
     var IDB_NAME = "90plus_app_db";
     var IDB_VERSION = 1;
     var IDB_STORE = "kv";
@@ -2064,6 +2126,262 @@
       } catch (e) {
         return "";
       }
+    }
+
+    function templateFileStorageKey(templateId) {
+      return IDB_KEY_TEMPLATE_PREFIX + templateId;
+    }
+
+    function loadCustomTemplatesRaw() {
+      try {
+        var raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+        if (!raw) return [];
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function getActivePostTemplateEntry() {
+      try {
+        var tid = localStorage.getItem(ACTIVE_POST_TEMPLATE_ID_KEY);
+        if (!tid) return null;
+        var arr = loadCustomTemplatesRaw();
+        for (var i = 0; i < arr.length; i++) {
+          if (arr[i] && arr[i].id === tid) return arr[i];
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function loadTemplateImageFromIDB(templateId) {
+      return idbGetRaw(templateFileStorageKey(templateId)).then(function (rec) {
+        if (!rec || !rec.base64 || !rec.mime || !/^image\//i.test(rec.mime)) return null;
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.onload = function () {
+            resolve(img);
+          };
+          img.onerror = function () {
+            resolve(null);
+          };
+          img.src = "data:" + rec.mime + ";base64," + rec.base64;
+        });
+      });
+    }
+
+    /** مركز القالب شفاف → يُرسم فوق صورة الخلفية */
+    function templateCenterMostlyTransparent(img) {
+      if (!img || !img.naturalWidth) return false;
+      var cw = Math.min(120, img.naturalWidth);
+      var ch = Math.min(120, img.naturalHeight);
+      var c = document.createElement("canvas");
+      c.width = cw;
+      c.height = ch;
+      var cx = c.getContext("2d");
+      cx.drawImage(img, 0, 0, cw, ch);
+      var data = cx.getImageData(Math.floor(cw / 2), Math.floor(ch / 2), 1, 1).data;
+      return data[3] < 220;
+    }
+
+    function drawImageCover(ctx, img, cw, ch) {
+      var iw = img.naturalWidth;
+      var ih = img.naturalHeight;
+      if (!iw || !ih) return;
+      var ir = iw / ih;
+      var cr = cw / ch;
+      var sx,
+        sy,
+        sw,
+        sh;
+      if (ir > cr) {
+        sh = ih;
+        sw = ih * cr;
+        sx = (iw - sw) / 2;
+        sy = 0;
+      } else {
+        sw = iw;
+        sh = iw / cr;
+        sx = 0;
+        sy = (ih - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+    }
+
+    function roundRectPath(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, sans-serif";
+      var words = String(text || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .split(" ");
+      var lines = [];
+      var cur = "";
+      for (var i = 0; i < words.length; i++) {
+        var w = words[i];
+        var next = cur ? cur + " " + w : w;
+        if (ctx.measureText(next).width > maxWidth && cur) {
+          lines.push(cur);
+          cur = w;
+        } else {
+          cur = next;
+        }
+      }
+      if (cur) lines.push(cur);
+      return lines.length ? lines : [""];
+    }
+
+    /**
+     * توليد صورة بوست عمودية (ستوري) بأسلوب 90+ المرجعي.
+     */
+    function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr) {
+      var W = 1080;
+      var H = 1920;
+      canvas.width = W;
+      canvas.height = H;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#070708";
+      ctx.fillRect(0, 0, W, H);
+      drawImageCover(ctx, bgImg, W, H);
+
+      var transparentTpl =
+        overlayTplImg &&
+        overlayTplImg.complete &&
+        overlayTplImg.naturalWidth &&
+        templateCenterMostlyTransparent(overlayTplImg);
+
+      if (overlayTplImg && overlayTplImg.complete && overlayTplImg.naturalWidth && transparentTpl) {
+        ctx.drawImage(overlayTplImg, 0, 0, W, H);
+      }
+
+      var panelTop = H * 0.56;
+      var cornerR = 32;
+
+      if (!transparentTpl || !overlayTplImg) {
+        ctx.fillStyle = "rgba(10, 10, 14, 0.88)";
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        ctx.lineTo(0, panelTop + cornerR);
+        ctx.quadraticCurveTo(0, panelTop, cornerR, panelTop);
+        ctx.lineTo(W - cornerR, panelTop);
+        ctx.quadraticCurveTo(W, panelTop, W, panelTop + cornerR);
+        ctx.lineTo(W, H);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#e6bc3a";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        var badgeW = 440;
+        var badgeH = 58;
+        var bx = (W - badgeW) / 2;
+        var by = panelTop - badgeH - 28;
+        ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+        roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
+        ctx.fill();
+        ctx.strokeStyle = "#e6bc3a";
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "600 26px Cairo, Tajawal, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("# ninety plus", bx + badgeW / 2, by + badgeH / 2);
+
+        ctx.textAlign = "left";
+        ctx.shadowColor = "rgba(0,0,0,0.65)";
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 56px Bebas Neue, Cairo, sans-serif";
+        ctx.fillText("+90", 42, 78);
+        ctx.shadowBlur = 0;
+      }
+
+      var padX = 56;
+      var maxTW = W - padX * 2;
+      var fontPx = transparentTpl && overlayTplImg ? 34 : 38;
+      var lines = wrapLinesArabic(ctx, headlineAr, maxTW, fontPx);
+      var lineGap = Math.round(fontPx * 1.28);
+      var blockH = lines.length * lineGap + 36;
+      var textBottom = H - 72;
+      var startY = Math.min(panelTop + 48, textBottom - blockH + lineGap);
+
+      ctx.fillStyle = "#fefefe";
+      ctx.textAlign = "right";
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, sans-serif";
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = transparentTpl ? 6 : 4;
+      for (var li = 0; li < lines.length; li++) {
+        ctx.fillText(lines[li], W - padX, startY + li * lineGap);
+      }
+      ctx.shadowBlur = 0;
+      return true;
+    }
+
+    function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
+      var sys =
+        "أنت محرر رياضي عربي. أخرج فقرة إخبارية واحدة قصيرة لبوست إنستغرام (3 إلى 5 أسطر كحد أقصى)، بدون هاشتاغ، بدون عنوان منفصل، بدون عبارات مثل «إليك الخبر». اعتمد النص المصدر فقط.";
+      var usr = "النص:\n" + String(articleArabicText || "").trim().slice(0, 12000);
+      return fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        signal: signal,
+        headers: {
+          Authorization: "Bearer " + secret,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: sys },
+            { role: "user", content: usr }
+          ],
+          temperature: 0.35,
+          max_tokens: 600
+        })
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            var msg = (data && data.error && data.error.message) || res.statusText || "خطأ";
+            var err = new Error(msg);
+            err.status = res.status;
+            throw err;
+          }
+          var ch = data.choices && data.choices[0] && data.choices[0].message;
+          var txt = ch && ch.content ? String(ch.content).trim() : "";
+          return txt || String(articleArabicText || "").trim();
+        });
+      });
+    }
+
+    function loadImageFromUrl(url) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = function () {
+          resolve(img);
+        };
+        img.onerror = function () {
+          reject(new Error("تعذر تحميل الصورة"));
+        };
+        img.referrerPolicy = "no-referrer";
+        img.src = url;
+      });
     }
 
     function wizardHtmlToVisibleText(html) {
@@ -3721,7 +4039,38 @@
             storeTemplateFile(id, file)
               .then(function (meta) {
                 entry.attachmentMeta = meta;
+                var mime = (meta.mime || "").toLowerCase();
+                var fn = (meta.fileName || "").toLowerCase();
+                if (mime.indexOf("png") !== -1 || fn.indexOf(".png") !== -1) {
+                  entry.isPostCanvas = true;
+                  try {
+                    localStorage.setItem(ACTIVE_POST_TEMPLATE_ID_KEY, id);
+                  } catch (eAct) {}
+                  return idbGetRaw(templateAttachmentKey(id)).then(function (rec) {
+                    if (!rec || !rec.base64) return;
+                    return new Promise(function (resolve) {
+                      var im = new Image();
+                      im.onload = function () {
+                        entry.pngWidth = im.naturalWidth;
+                        entry.pngHeight = im.naturalHeight;
+                        resolve();
+                      };
+                      im.onerror = function () {
+                        resolve();
+                      };
+                      im.src = "data:" + rec.mime + ";base64," + rec.base64;
+                    });
+                  });
+                }
+              })
+              .then(function () {
                 finishSave();
+                setTemplatesFeedback(
+                  entry.isPostCanvas
+                    ? "تم الحفظ — ملف PNG هو قالب البوست النشط لتوليد الصور في «إنشاء منشور»."
+                    : "تم حفظ القالب ومرفقه (إن وُجد) في هذا المتصفح حتى تحذفه.",
+                  "ok"
+                );
               })
               .catch(function () {
                 setTemplatesFeedback(
