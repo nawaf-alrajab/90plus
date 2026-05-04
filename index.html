@@ -485,6 +485,120 @@
       box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.15);
     }
 
+    .settings-field textarea {
+      width: 100%;
+      min-height: 4rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.35);
+      background: rgba(0, 8, 20, 0.55);
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.88rem;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .settings-field textarea:focus {
+      outline: none;
+      border-color: var(--bus-yellow);
+      box-shadow: 0 0 0 2px rgba(255, 195, 0, 0.15);
+    }
+
+    .templates-section h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+      margin: 0 0 0.75rem;
+    }
+
+    .templates-add-form {
+      max-width: 520px;
+    }
+
+    .templates-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .templates-list li {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 195, 0, 0.22);
+      background: rgba(0, 8, 20, 0.4);
+      font-size: 0.92rem;
+    }
+
+    .templates-list .tpl-body {
+      min-width: 0;
+    }
+
+    .templates-list .tpl-name {
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.96);
+    }
+
+    .templates-list .tpl-notes {
+      display: block;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.52);
+      margin-top: 0.3rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .templates-list .tpl-id {
+      font-size: 0.76rem;
+      color: rgba(255, 255, 255, 0.38);
+      margin-top: 0.25rem;
+      font-family: ui-monospace, monospace;
+      direction: ltr;
+      text-align: right;
+    }
+
+    .btn-template-del {
+      flex-shrink: 0;
+      align-self: flex-start;
+      padding: 0.38rem 0.7rem;
+      font-size: 0.82rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 107, 0.45);
+      background: rgba(50, 0, 0, 0.35);
+      color: #ffb4b4;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-template-del:hover {
+      background: rgba(90, 0, 0, 0.45);
+    }
+
+    .templates-list--static li {
+      border-color: rgba(255, 195, 0, 0.12);
+      background: rgba(0, 8, 20, 0.28);
+    }
+
+    .templates-feedback {
+      margin-top: 0.65rem;
+      font-size: 0.88rem;
+    }
+
+    .templates-feedback.ok {
+      color: #7bed9f;
+    }
+
+    .templates-feedback.err {
+      color: #ff6b6b;
+    }
+
     .settings-actions {
       display: flex;
       flex-wrap: wrap;
@@ -1540,10 +1654,6 @@
                 <label for="wizTemplate">القالب</label>
                 <select id="wizTemplate">
                   <option value="">— اختر قالباً —</option>
-                  <option value="match">مباراة</option>
-                  <option value="news">خبر</option>
-                  <option value="quote">اقتباس / تصريح</option>
-                  <option value="stats">إحصائيات</option>
                 </select>
               </div>
             </div>
@@ -1610,7 +1720,44 @@
       </div>
       <div class="tab-panel" id="panel-templates" role="region" aria-labelledby="tab-templates">
         <h2>القوالب</h2>
-        <p>قوالب جاهزة للمنشورات.</p>
+        <p class="hint" style="margin-bottom: 1.25rem">
+          أضف قوالبك الخاصة؛ تُحفظ في هذا المتصفح وتظهر في خطوة «اختيار القالب» عند إنشاء منشور. القوالب المدمجة ثابتة ولا تُحذف.
+        </p>
+
+        <section class="templates-section">
+          <h3>إضافة قالب</h3>
+          <form id="addTemplateForm" class="templates-add-form" novalidate>
+            <div class="settings-field">
+              <label for="newTemplateName">اسم القالب</label>
+              <input
+                type="text"
+                id="newTemplateName"
+                name="name"
+                maxlength="100"
+                autocomplete="off"
+                placeholder="مثال: ملخص مباراة سريع"
+                dir="auto"
+              />
+            </div>
+            <div class="settings-field">
+              <label for="newTemplateNotes">ملاحظات (اختياري)</label>
+              <textarea id="newTemplateNotes" name="notes" rows="3" placeholder="تذكير لك عند استخدام القالب…" dir="auto"></textarea>
+            </div>
+            <button type="submit" class="btn-settings" id="btnAddTemplate">حفظ القالب</button>
+          </form>
+          <p class="templates-feedback muted" id="templatesAddFeedback" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="templates-section" style="margin-top: 1.75rem">
+          <h3>قوالبك</h3>
+          <ul class="templates-list" id="templatesCustomList" aria-label="قوالب مضافة"></ul>
+          <p class="hint" id="templatesEmptyHint" hidden>لم تُضف قوالب بعد. استخدم النموذج أعلاه.</p>
+        </section>
+
+        <section class="templates-section" style="margin-top: 1.75rem">
+          <h3>قوالب مدمجة</h3>
+          <ul class="templates-list templates-list--static" id="templatesBuiltinList" aria-label="قوالب مدمجة"></ul>
+        </section>
       </div>
       <div class="tab-panel" id="panel-sources" role="region" aria-labelledby="tab-sources" aria-hidden="true">
         <h2>المصادر</h2>
@@ -1733,6 +1880,7 @@
     var OPENAI_TOKEN_STORAGE = "90plus_openai_api_token";
     var OPENAI_VERIFIED_AT_KEY = "90plus_openai_verified_at";
     var USERS_STORAGE_KEY = "90plus_users_json";
+    var TEMPLATES_STORAGE_KEY = "90plus_custom_templates_json";
     var IDB_NAME = "90plus_app_db";
     var IDB_VERSION = 1;
     var IDB_STORE = "kv";
@@ -3180,6 +3328,218 @@
 
         showApp();
       });
+    })();
+
+    (function initTemplatesManager() {
+      var BUILTIN = [
+        { id: "match", name: "مباراة" },
+        { id: "news", name: "خبر" },
+        { id: "quote", name: "اقتباس / تصريح" },
+        { id: "stats", name: "إحصائيات" }
+      ];
+
+      function loadCustomTemplates() {
+        try {
+          var raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+          if (!raw) return [];
+          var arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr.filter(function (x) {
+            return (
+              x &&
+              typeof x.id === "string" &&
+              x.id.length > 0 &&
+              typeof x.name === "string" &&
+              x.name.trim().length >= 1
+            );
+          });
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveCustomTemplates(arr) {
+        localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(arr));
+      }
+
+      function genTemplateId() {
+        return "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function fillBuiltinList() {
+        var ul = document.getElementById("templatesBuiltinList");
+        if (!ul) return;
+        ul.innerHTML = "";
+        BUILTIN.forEach(function (t) {
+          var li = document.createElement("li");
+          var body = document.createElement("div");
+          body.className = "tpl-body";
+          var name = document.createElement("span");
+          name.className = "tpl-name";
+          name.textContent = t.name;
+          var idEl = document.createElement("span");
+          idEl.className = "tpl-id";
+          idEl.textContent = t.id;
+          body.appendChild(name);
+          body.appendChild(idEl);
+          li.appendChild(body);
+          ul.appendChild(li);
+        });
+      }
+
+      function fillCustomList() {
+        var ul = document.getElementById("templatesCustomList");
+        var emptyHint = document.getElementById("templatesEmptyHint");
+        if (!ul) return;
+        var list = loadCustomTemplates();
+        ul.innerHTML = "";
+        if (emptyHint) emptyHint.hidden = list.length > 0;
+        list.forEach(function (t) {
+          var li = document.createElement("li");
+          var body = document.createElement("div");
+          body.className = "tpl-body";
+          var name = document.createElement("span");
+          name.className = "tpl-name";
+          name.textContent = t.name.trim();
+          var notes = (t.notes && String(t.notes).trim()) || "";
+          if (notes) {
+            var n = document.createElement("span");
+            n.className = "tpl-notes";
+            n.textContent = notes;
+            body.appendChild(name);
+            body.appendChild(n);
+          } else {
+            body.appendChild(name);
+          }
+          var idEl = document.createElement("span");
+          idEl.className = "tpl-id";
+          idEl.textContent = t.id;
+          body.appendChild(idEl);
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "btn-template-del";
+          btn.setAttribute("data-template-id", t.id);
+          btn.setAttribute("aria-label", "حذف القالب " + t.name);
+          btn.textContent = "حذف";
+          li.appendChild(body);
+          li.appendChild(btn);
+          ul.appendChild(li);
+        });
+      }
+
+      function optionExists(sel, value) {
+        for (var i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === value) return true;
+        }
+        return false;
+      }
+
+      function syncWizTemplateSelect() {
+        var sel = document.getElementById("wizTemplate");
+        if (!sel) return;
+        var prev = sel.value;
+        while (sel.firstChild) {
+          sel.removeChild(sel.firstChild);
+        }
+        var opt0 = document.createElement("option");
+        opt0.value = "";
+        opt0.textContent = "— اختر قالباً —";
+        sel.appendChild(opt0);
+
+        var og1 = document.createElement("optgroup");
+        og1.label = "قوالب مدمجة";
+        BUILTIN.forEach(function (t) {
+          var o = document.createElement("option");
+          o.value = t.id;
+          o.textContent = t.name;
+          og1.appendChild(o);
+        });
+        sel.appendChild(og1);
+
+        var customs = loadCustomTemplates();
+        if (customs.length) {
+          var og2 = document.createElement("optgroup");
+          og2.label = "قوالبي";
+          customs.forEach(function (t) {
+            var o = document.createElement("option");
+            o.value = t.id;
+            o.textContent = t.name.trim();
+            og2.appendChild(o);
+          });
+          sel.appendChild(og2);
+        }
+
+        if (prev && optionExists(sel, prev)) {
+          sel.value = prev;
+        } else {
+          sel.value = "";
+        }
+      }
+
+      function setTemplatesFeedback(msg, kind) {
+        var fb = document.getElementById("templatesAddFeedback");
+        if (!fb) return;
+        fb.textContent = msg || "";
+        fb.classList.remove("ok", "err", "muted");
+        if (!msg) {
+          fb.classList.add("muted");
+          return;
+        }
+        if (kind === "err") fb.classList.add("err");
+        else fb.classList.add("ok");
+      }
+
+      function refreshTemplatesPanel() {
+        fillBuiltinList();
+        fillCustomList();
+        syncWizTemplateSelect();
+      }
+
+      var form = document.getElementById("addTemplateForm");
+      if (form) {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var nameIn = document.getElementById("newTemplateName");
+          var notesIn = document.getElementById("newTemplateNotes");
+          var name = nameIn ? String(nameIn.value || "").trim() : "";
+          if (name.length < 2) {
+            setTemplatesFeedback("أدخل اسماً للقالب (حرفان على الأقل).", "err");
+            return;
+          }
+          var notes = notesIn ? String(notesIn.value || "").trim() : "";
+          var customs = loadCustomTemplates();
+          var id = genTemplateId();
+          customs.push({ id: id, name: name, notes: notes });
+          saveCustomTemplates(customs);
+          if (nameIn) nameIn.value = "";
+          if (notesIn) notesIn.value = "";
+          setTemplatesFeedback("تم حفظ القالب ويظهر الآن في إنشاء المنشور ← اختيار القالب.", "ok");
+          refreshTemplatesPanel();
+        });
+      }
+
+      var customUl = document.getElementById("templatesCustomList");
+      if (customUl) {
+        customUl.addEventListener("click", function (e) {
+          var btn = e.target && e.target.closest(".btn-template-del");
+          if (!btn) return;
+          var tid = btn.getAttribute("data-template-id");
+          if (!tid) return;
+          if (!window.confirm("حذف هذا القالب؟ لن يُحذف من منشورات قديمة، لكن سيختفي من القائمة.")) {
+            return;
+          }
+          var customs = loadCustomTemplates().filter(function (x) {
+            return x.id !== tid;
+          });
+          saveCustomTemplates(customs);
+          var sel = document.getElementById("wizTemplate");
+          if (sel && sel.value === tid) sel.value = "";
+          setTemplatesFeedback("تم حذف القالب.", "ok");
+          refreshTemplatesPanel();
+        });
+      }
+
+      refreshTemplatesPanel();
     })();
 
     (function initCreateWizard() {
