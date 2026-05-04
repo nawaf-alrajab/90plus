@@ -586,6 +586,149 @@
       background: rgba(0, 8, 20, 0.28);
     }
 
+    .templates-library-head {
+      margin-bottom: 1rem;
+    }
+
+    .templates-library-head h3 {
+      margin-bottom: 0.35rem;
+    }
+
+    .templates-library-sub {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .templates-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+      gap: 0.85rem;
+      align-items: stretch;
+    }
+
+    .tpl-card {
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem 0.9rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 195, 0, 0.22);
+      background: rgba(0, 8, 20, 0.42);
+      font-size: 0.92rem;
+      min-width: 0;
+    }
+
+    .tpl-card-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 0.65rem;
+      margin-bottom: 0.55rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 195, 0, 0.12);
+    }
+
+    .tpl-card-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.75rem;
+      height: 1.75rem;
+      padding: 0 0.4rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(255, 195, 0, 0.18);
+      color: var(--bus-yellow, #ffc300);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tpl-card-badge {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      background: rgba(46, 204, 113, 0.22);
+      color: #7bed9f;
+      border: 1px solid rgba(46, 204, 113, 0.35);
+    }
+
+    .tpl-card .tpl-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .tpl-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.65rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-template-test {
+      flex: 1;
+      min-width: 6rem;
+      padding: 0.42rem 0.75rem;
+      font-size: 0.84rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.45);
+      background: rgba(255, 195, 0, 0.12);
+      color: #ffe9a8;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-template-test:hover:not(:disabled) {
+      background: rgba(255, 195, 0, 0.22);
+    }
+
+    .btn-template-test:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .tpl-card .btn-template-del {
+      flex: 1;
+      min-width: 6rem;
+      align-self: stretch;
+    }
+
+    .tpl-test-panel {
+      margin-top: 0.65rem;
+      padding-top: 0.55rem;
+      border-top: 1px dashed rgba(255, 195, 0, 0.2);
+    }
+
+    .tpl-test-panel canvas.tpl-test-canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 195, 0, 0.2);
+      background: #070708;
+    }
+
+    .tpl-test-hint {
+      margin: 0.45rem 0 0;
+      font-size: 0.76rem;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .templates-builtin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.55rem;
+    }
+
+    .templates-builtin-grid li {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
     .templates-feedback {
       margin-top: 0.65rem;
       font-size: 0.88rem;
@@ -674,7 +817,6 @@
       height: auto;
       display: block;
       margin: 0 auto;
-      vertical-align: top;
     }
 
     .settings-actions {
@@ -1864,9 +2006,14 @@
           <p class="templates-feedback muted" id="templatesAddFeedback" role="status" aria-live="polite"></p>
         </section>
 
-        <section class="templates-section" style="margin-top: 1.75rem">
-          <h3>قوالبك</h3>
-          <ul class="templates-list" id="templatesCustomList" aria-label="قوالب مضافة"></ul>
+        <section class="templates-section templates-section--library" style="margin-top: 1.75rem">
+          <div class="templates-library-head">
+            <h3>قوالبك</h3>
+            <p class="hint templates-library-sub">
+              مرتبة من الأحدث للأقدم. زر «اختبار» يعرض معاينة سريعة بنص وهمي على خلفية تجريبية (وليس منشوراً حقيقياً).
+            </p>
+          </div>
+          <div id="templatesCustomList" class="templates-cards-grid" role="list" aria-label="قوالب مضافة"></div>
           <p class="hint" id="templatesEmptyHint" hidden>لم تُضف قوالب بعد. استخدم النموذج أعلاه.</p>
         </section>
 
@@ -1875,7 +2022,7 @@
           <p class="hint" style="margin-bottom: 0.65rem; font-size: 0.82rem">
             تصنيفات عامة للمسار؛ ليست نصوصاً جاهزة — قوالبك أعلاه تضم اسماً ووصفاً و/أو مرفقاً.
           </p>
-          <ul class="templates-list templates-list--static" id="templatesBuiltinList" aria-label="قوالب مدمجة"></ul>
+          <ul class="templates-list templates-list--static templates-builtin-grid" id="templatesBuiltinList" aria-label="قوالب مدمجة"></ul>
         </section>
       </div>
       <div class="tab-panel" id="panel-sources" role="region" aria-labelledby="tab-sources" aria-hidden="true">
@@ -2334,13 +2481,42 @@
       return true;
     }
 
+    /** خلفية وهمية لمعاينة «اختبار» في تبويب القوالب */
+    function createPlaceholderBgImage() {
+      return new Promise(function (resolve) {
+        var W = 1080;
+        var H = 1920;
+        var c = document.createElement("canvas");
+        c.width = W;
+        c.height = H;
+        var ctx = c.getContext("2d");
+        var g = ctx.createLinearGradient(0, 0, W, H);
+        g.addColorStop(0, "#152238");
+        g.addColorStop(0.5, "#0a1428");
+        g.addColorStop(1, "#040810");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "rgba(255,255,255,0.04)";
+        for (var y = 0; y < H; y += 96) {
+          ctx.fillRect(0, y, W, 1);
+        }
+        var img = new Image();
+        img.onload = function () {
+          resolve(img);
+        };
+        img.onerror = function () {
+          resolve(img);
+        };
+        img.src = c.toDataURL("image/png");
+      });
+    }
+
     function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
       var sys =
         "أنت محرر رياضي عربي. أخرج فقرة إخبارية واحدة قصيرة لبوست إنستغرام (3 إلى 5 أسطر كحد أقصى)، بدون هاشتاغ، بدون عنوان منفصل، بدون عبارات مثل «إليك الخبر». اعتمد النص المصدر فقط.";
       var usr = "النص:\n" + String(articleArabicText || "").trim().slice(0, 12000);
-      return fetch("https://api.openai.com/v1/chat/completions", {
+      var reqInit = {
         method: "POST",
-        signal: signal,
         headers: {
           Authorization: "Bearer " + secret,
           "Content-Type": "application/json"
@@ -2354,7 +2530,9 @@
           temperature: 0.35,
           max_tokens: 600
         })
-      }).then(function (res) {
+      };
+      if (signal) reqInit.signal = signal;
+      return fetch("https://api.openai.com/v1/chat/completions", reqInit).then(function (res) {
         return res.json().then(function (data) {
           if (!res.ok) {
             var msg = (data && data.error && data.error.message) || res.statusText || "خطأ";
@@ -3748,13 +3926,31 @@
         var notes = x.notes != null ? String(x.notes).trim() : "";
         var hasAtt = !!(x.attachmentMeta && x.attachmentMeta.fileName);
         if (!body.length && !notes.length && !hasAtt) return null;
+        var createdAt = x.createdAt;
+        if (typeof createdAt !== "number" || isNaN(createdAt)) createdAt = undefined;
         return {
           id: id,
           name: name,
           body: body,
           notes: notes,
-          attachmentMeta: x.attachmentMeta || null
+          attachmentMeta: x.attachmentMeta || null,
+          createdAt: createdAt,
+          isPostCanvas: !!x.isPostCanvas,
+          pngWidth: x.pngWidth,
+          pngHeight: x.pngHeight
         };
+      }
+
+      function templateSortKey(t) {
+        if (t && typeof t.createdAt === "number" && !isNaN(t.createdAt)) return t.createdAt;
+        var m = String((t && t.id) || "").match(/^c_(\d+)_/);
+        return m ? parseInt(m[1], 10) : 0;
+      }
+
+      function sortTemplatesNewestFirst(arr) {
+        return arr.slice().sort(function (a, b) {
+          return templateSortKey(b) - templateSortKey(a);
+        });
       }
 
       function loadCustomTemplates() {
@@ -3845,10 +4041,34 @@
         var emptyHint = document.getElementById("templatesEmptyHint");
         if (!ul) return;
         var list = loadCustomTemplates();
+        var sorted = sortTemplatesNewestFirst(list);
+        var activeId = "";
+        try {
+          activeId = localStorage.getItem(ACTIVE_POST_TEMPLATE_ID_KEY) || "";
+        } catch (eAct) {}
         ul.innerHTML = "";
-        if (emptyHint) emptyHint.hidden = list.length > 0;
-        list.forEach(function (t) {
-          var li = document.createElement("li");
+        if (emptyHint) emptyHint.hidden = sorted.length > 0;
+        sorted.forEach(function (t, idx) {
+          var card = document.createElement("article");
+          card.className = "tpl-card";
+          card.setAttribute("role", "listitem");
+          card.setAttribute("data-template-id", t.id);
+
+          var head = document.createElement("div");
+          head.className = "tpl-card-head";
+          var num = document.createElement("span");
+          num.className = "tpl-card-num";
+          num.textContent = String(idx + 1);
+          num.setAttribute("aria-hidden", "true");
+          head.appendChild(num);
+          if (activeId && t.id === activeId) {
+            var badge = document.createElement("span");
+            badge.className = "tpl-card-badge";
+            badge.textContent = "قالب البوست النشط";
+            head.appendChild(badge);
+          }
+          card.appendChild(head);
+
           var bodyWrap = document.createElement("div");
           bodyWrap.className = "tpl-body";
 
@@ -3909,6 +4129,17 @@
           idEl.textContent = t.id;
           bodyWrap.appendChild(idEl);
 
+          var actions = document.createElement("div");
+          actions.className = "tpl-card-actions";
+
+          var btnTest = document.createElement("button");
+          btnTest.type = "button";
+          btnTest.className = "btn-template-test";
+          btnTest.setAttribute("data-template-id", t.id);
+          btnTest.setAttribute("aria-expanded", "false");
+          btnTest.setAttribute("aria-label", "اختبار معاينة القالب " + t.name);
+          btnTest.textContent = "اختبار";
+
           var btn = document.createElement("button");
           btn.type = "button";
           btn.className = "btn-template-del";
@@ -3916,9 +4147,26 @@
           btn.setAttribute("aria-label", "حذف القالب " + t.name);
           btn.textContent = "حذف نهائياً";
 
-          li.appendChild(bodyWrap);
-          li.appendChild(btn);
-          ul.appendChild(li);
+          actions.appendChild(btnTest);
+          actions.appendChild(btn);
+
+          var testPanel = document.createElement("div");
+          testPanel.className = "tpl-test-panel";
+          testPanel.hidden = true;
+          var cnv = document.createElement("canvas");
+          cnv.className = "tpl-test-canvas";
+          cnv.setAttribute("aria-label", "معاينة تجريبية للقالب");
+          var testHint = document.createElement("p");
+          testHint.className = "tpl-test-hint";
+          testHint.textContent =
+            "معاينة تجريبية بنص وهمي على خلفية افتراضية — ليست منشوراً حقيقياً.";
+          testPanel.appendChild(cnv);
+          testPanel.appendChild(testHint);
+
+          card.appendChild(bodyWrap);
+          card.appendChild(actions);
+          card.appendChild(testPanel);
+          ul.appendChild(card);
         });
       }
 
@@ -3951,7 +4199,7 @@
         });
         sel.appendChild(og1);
 
-        var customs = loadCustomTemplates();
+        var customs = sortTemplatesNewestFirst(loadCustomTemplates());
         if (customs.length) {
           var og2 = document.createElement("optgroup");
           og2.label = "قوالبي";
@@ -4020,16 +4268,17 @@
           }
           var id = genTemplateId();
           var customs = loadCustomTemplates();
-          var entry = { id: id, name: name, body: "", notes: notes };
+          var entry = { id: id, name: name, body: "", notes: notes, createdAt: Date.now() };
 
-          function finishSave() {
+          function finishSave(msg) {
             customs.push(entry);
             saveCustomTemplates(customs);
             if (nameIn) nameIn.value = "";
             if (notesIn) notesIn.value = "";
             if (fileIn) fileIn.value = "";
             setTemplatesFeedback(
-              "تم حفظ القالب ومرفقه (إن وُجد) في هذا المتصفح حتى تحذفه.",
+              msg ||
+                "تم حفظ القالب ومرفقه (إن وُجد) في هذا المتصفح حتى تحذفه.",
               "ok"
             );
             refreshTemplatesPanel();
@@ -4064,12 +4313,10 @@
                 }
               })
               .then(function () {
-                finishSave();
-                setTemplatesFeedback(
+                finishSave(
                   entry.isPostCanvas
                     ? "تم الحفظ — ملف PNG هو قالب البوست النشط لتوليد الصور في «إنشاء منشور»."
-                    : "تم حفظ القالب ومرفقه (إن وُجد) في هذا المتصفح حتى تحذفه.",
-                  "ok"
+                    : undefined
                 );
               })
               .catch(function () {
@@ -4087,6 +4334,55 @@
       var customUl = document.getElementById("templatesCustomList");
       if (customUl) {
         customUl.addEventListener("click", function (e) {
+          var testBtn = e.target && e.target.closest(".btn-template-test");
+          if (testBtn) {
+            e.preventDefault();
+            var tidT = testBtn.getAttribute("data-template-id");
+            if (!tidT) return;
+            var cardT = testBtn.closest(".tpl-card");
+            var panel = cardT && cardT.querySelector(".tpl-test-panel");
+            var cnvEl = cardT && cardT.querySelector("canvas.tpl-test-canvas");
+            if (!panel || !cnvEl) return;
+            if (!panel.hidden) {
+              panel.hidden = true;
+              testBtn.setAttribute("aria-expanded", "false");
+              return;
+            }
+            var others = customUl.querySelectorAll(".tpl-test-panel");
+            for (var oi = 0; oi < others.length; oi++) {
+              if (others[oi] !== panel) {
+                others[oi].hidden = true;
+                var otherCard = others[oi].closest(".tpl-card");
+                var ob = otherCard && otherCard.querySelector(".btn-template-test");
+                if (ob) ob.setAttribute("aria-expanded", "false");
+              }
+            }
+            testBtn.disabled = true;
+            var prevLabel = testBtn.textContent;
+            testBtn.textContent = "…";
+            var sampleHeadline =
+              "نص تجريبي لمعاينة القالب — الطريقة السريعة قبل الخبر الحقيقي في المسار.";
+            Promise.all([createPlaceholderBgImage(), loadTemplateImageFromIDB(tidT)])
+              .then(function (pair) {
+                var bg = pair[0];
+                var ov = pair[1];
+                composePostStoryImage(cnvEl, bg, ov, sampleHeadline);
+                panel.hidden = false;
+                testBtn.setAttribute("aria-expanded", "true");
+              })
+              .catch(function () {
+                setTemplatesFeedback(
+                  "تعذّرت المعاينة. تأكد من أن المتصفح يسمح بالتخزين المحلي وصورة القالب.",
+                  "err"
+                );
+              })
+              .finally(function () {
+                testBtn.disabled = false;
+                testBtn.textContent = prevLabel || "اختبار";
+              });
+            return;
+          }
+
           var btn = e.target && e.target.closest(".btn-template-del");
           if (!btn) return;
           var tid = btn.getAttribute("data-template-id");
@@ -4107,6 +4403,11 @@
               saveCustomTemplates(customs);
               var sel = document.getElementById("wizTemplate");
               if (sel && sel.value === tid) sel.value = "";
+              try {
+                if (localStorage.getItem(ACTIVE_POST_TEMPLATE_ID_KEY) === tid) {
+                  localStorage.removeItem(ACTIVE_POST_TEMPLATE_ID_KEY);
+                }
+              } catch (eActiveDel) {}
               setTemplatesFeedback("تم حذف القالب والمرفق من الجهاز.", "ok");
               refreshTemplatesPanel();
             });
@@ -4131,6 +4432,14 @@
 
       function $(id) {
         return document.getElementById(id);
+      }
+
+      function updatePostStorySectionVisibility() {
+        var sec = $("wizPostStorySection");
+        if (!sec) return;
+        var linkOk = $("wizExtractResultWrap") && !$("wizExtractResultWrap").hidden;
+        var imgOk = $("wizSourceImagePreviewWrap") && !$("wizSourceImagePreviewWrap").hidden;
+        sec.hidden = !(linkOk || imgOk);
       }
 
       var errBox = $("wizardError");
@@ -4180,6 +4489,7 @@
           if (iw) iw.hidden = true;
           if (im) im.removeAttribute("src");
         }
+        updatePostStorySectionVisibility();
       }
 
       function validateStep(i) {
@@ -4549,7 +4859,13 @@
                   "90plus_wizard_extracted_text",
                   (plainOut || out).slice(0, 1800000)
                 );
+                if (mmMeta.imageUrl) {
+                  sessionStorage.setItem(SESSION_EXTRACT_IMAGE_URL_KEY, mmMeta.imageUrl);
+                } else {
+                  sessionStorage.removeItem(SESSION_EXTRACT_IMAGE_URL_KEY);
+                }
               } catch (e) {}
+              updatePostStorySectionVisibility();
             })
             .catch(function (err) {
               var st = err && err.status;
@@ -4653,6 +4969,146 @@
         });
       }
 
+      var btnGenPost = $("wizBtnGeneratePostImage");
+      var dlPost = $("wizBtnDownloadPostImage");
+      var cvPost = $("wizPostCanvas");
+      var fbPost = $("wizPostCanvasFeedback");
+      if (btnGenPost && cvPost) {
+        btnGenPost.addEventListener("click", function () {
+          if (fbPost) {
+            fbPost.textContent = "";
+            fbPost.classList.remove("ok", "err");
+          }
+          var secret = getOpenAISecret();
+          if (!secret) {
+            if (fbPost) {
+              fbPost.textContent =
+                "لا يوجد مفتاح OpenAI — أضفه من الإعدادات ثم «حفظ المفاتيح».";
+              fbPost.classList.add("err");
+            }
+            return;
+          }
+          var arText =
+            ($("wizExtractTranslated") && $("wizExtractTranslated").textContent.trim()) ||
+            ($("wizTranslation") && $("wizTranslation").value.trim()) ||
+            ($("wizRewrite") && $("wizRewrite").value.trim()) ||
+            "";
+          if (arText.length < 8) {
+            if (fbPost) {
+              fbPost.textContent =
+                "لا يوجد نص عربي كافٍ — انتهِ من الاستخراج أو انسخ الترجمة، أو أدخل نصاً في «إعادة صياغة».";
+              fbPost.classList.add("err");
+            }
+            return;
+          }
+          var tplEntry = getActivePostTemplateEntry();
+          var pngOverlay =
+            tplEntry &&
+            tplEntry.id &&
+            (tplEntry.isPostCanvas ||
+              (tplEntry.attachmentMeta &&
+                (/png/i.test(String(tplEntry.attachmentMeta.mime || "")) ||
+                  /\.png$/i.test(String(tplEntry.attachmentMeta.fileName || "")))));
+          var overlayPromise = pngOverlay
+            ? loadTemplateImageFromIDB(tplEntry.id).catch(function () {
+                return null;
+              })
+            : Promise.resolve(null);
+          var bgPromise;
+          if (getSourceType() === "link") {
+            var imgUrl = "";
+            try {
+              imgUrl = sessionStorage.getItem(SESSION_EXTRACT_IMAGE_URL_KEY) || "";
+            } catch (eU) {}
+            if (!imgUrl && $("wizExtractImage") && $("wizExtractImage").src) {
+              imgUrl = $("wizExtractImage").src;
+            }
+            if (!imgUrl) {
+              if (fbPost) {
+                fbPost.textContent =
+                  "لا توجد صورة خلفية من الرابط — تأكد أن المنشور يحوي صورة أو اختر نوع إدخال «صورة» وارفع الخلفية.";
+                fbPost.classList.add("err");
+              }
+              return;
+            }
+            bgPromise = loadImageFromUrl(imgUrl);
+          } else {
+            var fi = $("wizSourceImageFile") && $("wizSourceImageFile").files && $("wizSourceImageFile").files[0];
+            if (!fi) {
+              if (fbPost) {
+                fbPost.textContent = "ارفع صورة الخبر في الخطوة الأولى أولاً.";
+                fbPost.classList.add("err");
+              }
+              return;
+            }
+            bgPromise = new Promise(function (resolve, reject) {
+              var fr = new FileReader();
+              fr.onload = function () {
+                var img = new Image();
+                img.onload = function () {
+                  resolve(img);
+                };
+                img.onerror = function () {
+                  reject(new Error("تعذر قراءة الصورة"));
+                };
+                img.src = fr.result;
+              };
+              fr.onerror = function () {
+                reject(new Error("تعذر قراءة الملف"));
+              };
+              fr.readAsDataURL(fi);
+            });
+          }
+          btnGenPost.disabled = true;
+          Promise.all([bgPromise, overlayPromise])
+            .then(function (parts) {
+              var bgImg = parts[0];
+              var ovImg = parts[1];
+              return wizardOpenAIComposePostHeadline(secret, arText, null)
+                .catch(function () {
+                  return arText.slice(0, 900);
+                })
+                .then(function (headline) {
+                  composePostStoryImage(cvPost, bgImg, ovImg, headline);
+                  try {
+                    cvPost.toBlob(function (blob) {
+                      if (!blob || !dlPost) return;
+                      try {
+                        if (dlPost.href && dlPost.href.indexOf("blob:") === 0) {
+                          URL.revokeObjectURL(dlPost.href);
+                        }
+                      } catch (eR) {}
+                      dlPost.href = URL.createObjectURL(blob);
+                      dlPost.hidden = false;
+                    }, "image/png");
+                  } catch (eBlob) {
+                    if (fbPost) {
+                      fbPost.textContent =
+                        "تعذر تصدير PNG (قد تمنع سياسة الصور على اللوحة). جرّب مصدر صورة آخر أو افتح الصورة في تبويب ثم احفظها يدوياً.";
+                      fbPost.classList.add("err");
+                    }
+                    return;
+                  }
+                  if (fbPost) {
+                    fbPost.textContent =
+                      "تم إنشاء الصورة. إن لم يظهر زر التحميل، استخدم زر الفأرة الأيمن على المعاينة.";
+                    fbPost.classList.add("ok");
+                  }
+                });
+            })
+            .catch(function (err) {
+              if (fbPost) {
+                fbPost.textContent =
+                  (err && err.message) || "تعذر توليد الصورة. تحقق من الصورة والشبكة.";
+                fbPost.classList.add("err");
+              }
+            })
+            .finally(function () {
+              btnGenPost.disabled = false;
+            });
+        });
+      }
+
       document.querySelectorAll('#panel-create input[name="wizSourceType"]').forEach(function (inp) {
         inp.addEventListener("change", syncSourceTypeUI);
       });
@@ -4672,6 +5128,7 @@
           reader.onload = function () {
             prev.src = reader.result;
             wrap.hidden = false;
+            updatePostStorySectionVisibility();
           };
           reader.readAsDataURL(f);
           try {
