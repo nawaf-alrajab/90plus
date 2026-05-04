@@ -1039,6 +1039,27 @@
       line-height: 1.55;
     }
 
+    .wiz-extract-image-wrap {
+      margin-top: 0.85rem;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm, 8px);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .wiz-extract-image-wrap p {
+      margin: 0 0 0.5rem;
+      font-size: 0.82rem;
+      color: var(--muted, #aaa);
+    }
+
+    .wiz-extract-image-wrap img {
+      display: block;
+      max-width: min(100%, 420px);
+      height: auto;
+      border-radius: 6px;
+    }
+
     .wiz-check {
       display: flex;
       align-items: flex-start;
@@ -1359,6 +1380,10 @@
                 <div class="wiz-field" id="wizExtractResultWrap" hidden>
                   <label for="wizExtractResult">نتيجة الاستخراج</label>
                   <textarea id="wizExtractResult" readonly rows="14" dir="auto"></textarea>
+                  <div id="wizExtractImageWrap" class="wiz-extract-image-wrap" hidden>
+                    <p>صورة المنشور (من الرابط)</p>
+                    <img id="wizExtractImage" alt="" width="0" height="0" loading="lazy" referrerpolicy="no-referrer" />
+                  </div>
                   <div class="wiz-field-actions">
                     <button type="button" class="wizard-btn wizard-btn--merge" id="wizBtnCopyExtractToTranslation">
                       نسخ النص إلى خطوة الترجمة
@@ -1366,7 +1391,7 @@
                   </div>
                 </div>
                 <p class="hint" style="margin-top: 0.65rem; font-size: 0.78rem">
-                  الهدف: استخراج نص الخبر من منشور (صورة + وصف صاحب الحساب) دون تعليقات المتابعين ودون التركيز على الريل كفيديو. يُفضّل رابط منشور إنستغرام بصيغة /p/… استخدم مفتاح OpenAI من الإعدادات. الجلب يدمج عدة مسارات؛ إن ضاق النص يُفعَّل بحث الويب في OpenAI. المنشورات الخاصة قد لا تُعرض؛ انسخ نص المنشور من التطبيق إن لزم. النص المرسوم داخل الصورة يحتاج OCR وليس مدمجاً هنا.
+                  النتيجة تُنسَّق كالتالي: مصدر الخبر، ثم النص الأصلي من وصف المنشور، ثم الترجمة العربية، ثم رابط الصورة؛ ويُعرض معاين للصورة أسفل المربع إن وُجد الرابط. يُفضّل /p/ لإنستغرام. المفتاح من الإعدادات. إن ضاق الجلب يُفعَّل بحث الويب. المنشورات الخاصة قد لا تُعرض. النص داخل الصورة يحتاج OCR.
                 </p>
               </div>
 
@@ -1830,6 +1855,57 @@
         });
     }
 
+    /** بيانات منسّقة + رابط صورة من Microlink (مهم لإنستغرام عند فشل جلب HTML). */
+    function wizardFetchMicrolinkMeta(pageUrl) {
+      return fetch(
+        "https://api.microlink.io/?url=" +
+          encodeURIComponent(pageUrl) +
+          "&palette=false&audio=false&video=false"
+      )
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (j) {
+          if (!j || j.status !== "success" || !j.data) {
+            return { description: "", title: "", author: "", imageUrl: "", bundleText: "" };
+          }
+          var d = j.data;
+          var author = "";
+          if (d.author) {
+            if (typeof d.author === "string") author = d.author.trim();
+            else if (d.author.username) {
+              author = "@" + String(d.author.username).replace(/^@/, "");
+            } else if (d.author.name) {
+              author = String(d.author.name).trim();
+            }
+          }
+          var title = d.title ? String(d.title).trim() : "";
+          var description = d.description ? String(d.description).trim() : "";
+          var imageUrl = d.image && d.image.url ? String(d.image.url).trim() : "";
+          var parts = [];
+          if (title) parts.push("العنوان: " + title);
+          if (d.publisher) {
+            parts.push(
+              "الناشر: " +
+                String(typeof d.publisher === "object" && d.publisher.name ? d.publisher.name : d.publisher).trim()
+            );
+          }
+          if (author) parts.push("الحساب: " + author);
+          if (description) parts.push("الوصف/المقتطف: " + description);
+          if (d.lang) parts.push("لغة: " + d.lang);
+          return {
+            description: description,
+            title: title,
+            author: author,
+            imageUrl: imageUrl,
+            bundleText: parts.join("\n\n").trim()
+          };
+        })
+        .catch(function () {
+          return { description: "", title: "", author: "", imageUrl: "", bundleText: "" };
+        });
+    }
+
     function wizardIsTwitterXUrl(pageUrl) {
       try {
         var h = new URL(pageUrl.trim()).hostname.toLowerCase().replace(/^www\./, "");
@@ -2154,20 +2230,18 @@
         return "";
       });
 
-      var pMeta = wizardFetchMicrolinkBundle(clean).catch(function () {
-        return "";
-      });
       var pTw = wizardFetchTwitterXCombined(clean, signal).catch(function () {
         return "";
       });
 
-      return Promise.all([pJina, pAll, pCors, pCode, pMeta, pTw]).then(function (parts) {
+      /* Microlink يُستدعى مرة واحدة لاحقاً مع wizardFetchMicrolinkMeta لاستخراج الوصف ورابط الصورة */
+      return Promise.all([pJina, pAll, pCors, pCode, pTw]).then(function (parts) {
         var best = "";
         for (var i = 0; i < 4; i++) {
           var s = parts[i];
           if (typeof s === "string" && s.length > best.length) best = s;
         }
-        best = wizardMergeUrlSnippets(best, [parts[4], parts[5]]).trim();
+        best = wizardMergeUrlSnippets(best, [parts[4]]).trim();
         if (!wizardInstagramPostInfo(clean)) {
           return best;
         }
@@ -2210,34 +2284,47 @@
      * عند ضعف أو فراغ جلب المتصفح: Responses API + أداة البحث في الويب (مدمجة في OpenAI)
      * لتصل النموذج إلى الصفحة واستخراج المحتوى.
      */
-    function wizardOpenAIExtractViaWebSearch(secret, pageUrl, snippet, signal) {
+    function wizardOpenAIExtractViaWebSearch(secret, pageUrl, snippet, signal, meta) {
+      meta = meta || {};
       var hint =
         snippet && snippet.length > 40
           ? "\n\n---\nنص مُجلب جزئياً من المتصفح أو واجهات مساعدة (قد يكون ناقصاً):\n" + snippet.slice(0, 12000)
           : "";
 
+      var metaHint = "";
+      if (meta.description || meta.author || meta.title || meta.imageUrl) {
+        metaHint =
+          "\n\n---\nبيانات معاونة من خدمة معاينة الرابط:\n" +
+          (meta.author ? "حساب المنشور: " + meta.author + "\n" : "") +
+          (meta.title ? "عنوان: " + meta.title + "\n" : "") +
+          (meta.description
+            ? "نص وصف المنشور (من صاحب الحساب):\n" + meta.description + "\n"
+            : "") +
+          (meta.imageUrl ? "رابط صورة: " + meta.imageUrl + "\n" : "");
+      }
+
       var socialNote = "";
       if (wizardInstagramPostInfo(pageUrl)) {
         socialNote +=
-          "\nملاحظة: إنستغرام — اطلب نص منشور صاحب الحساب (خبر/وصف) فقط؛ لا تدرج تعليقات متابعين. الريل ليس المقصود كبث؛ إن وُجد وصف نصي للخبر فقط. إن تعذّر الجلب، اذكر تقييد المنصة لا أن الرابط خطأ.\n";
+          "\nإنستغرام — النص المطلوب هو تعليق صاحب الحساب فقط؛ تجاهل تعليقات الآخرين في الصفحة.\n";
       }
       if (wizardIsTwitterXUrl(pageUrl)) {
-        socialNote +=
-          "\nملاحظة: X — نص التغريدة/المنشور من صاحب الحساب فقط دون خيوط ردود.\n";
+        socialNote += "\nX — نص التغريدة من صاحب الحساب فقط.\n";
       }
 
       var inputText =
-        "المهمة: استخراج خبر إخباري من الرابط — ما ينشره صاحب الحساب أو المقال في النص الرئيسي لمنشور واحد (صورة/خبر).\n" +
-        "استبعد: تعليقات المتابعين، الردود، وذكر الريل كفيديو/بث؛ اقتصر على نص الخبر ووصف الصورة إن وُدا في المصدر.\n\n" +
-        "استخدم أداة البحث في الويب عند الحاجة للوصول للمحتوى.\n\n" +
+        "المهمة: استخراج خبر من منشور واحد ثم تنسيق الناتج بالعربية بالترتيب التالي تماماً:\n\n" +
+        "مصدر الخبر:\n(مثل: إنستغرام — @المستخدم)\n\n" +
+        "النص الأصلي من المنشور:\n(النص الكامل بلغته الأصلية من وصف المنشور فقط)\n\n" +
+        "الترجمة إلى العربية:\n(ترجمة كاملة للنص أعلاه)\n\n" +
+        "رابط صورة المنشور:\n(URL أو غير متاح)\n\n" +
+        "استخدم أداة البحث في الويب عند الحاجة.\n\n" +
         "الرابط:\n" +
         pageUrl +
         hint +
+        metaHint +
         socialNote +
-        "\n\nالمخرجات:\n" +
-        "• عنوان الخبر\n• المصدر / اسم الموقع\n• التاريخ والوقت إن ظهرا\n• ملخص في 2–4 جمل\n" +
-        "• نص الخبر من المنشور فقط (دون تعليقات جمهور)\n• وصف الصورة إن وُجد\n\n" +
-        "لا تختلق اقتباسات. إن لم يُسمح بالوصول لا تتهم الرابط بالبطلان دون سبب.";
+        "\n\nلا تكتب «لا يوجد محتوى» إذا وُجد نص في «نص وصف المنشور» أو في المعاونة أعلاه.";
 
       function postResponses(toolPayload) {
         return fetch("https://api.openai.com/v1/responses", {
@@ -2291,41 +2378,70 @@
       });
     }
 
-    /** تنسيق النص الخام المُجلب محلياً (كمية كافية). */
-    function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal) {
+    /**
+     * تنسيق ناتج الخبر: مصدر، نص أصلي، ترجمة عربية، رابط صورة.
+     * meta: { description, title, author, imageUrl, bundleText } من Microlink.
+     */
+    function wizardOpenAIExtractArticle(secret, pageUrl, rawContent, signal, meta) {
+      meta = meta || {};
       var truncated = String(rawContent || "").slice(0, 120000);
-      var hasBody = truncated.trim().length >= 80;
+      var metaDesc = (meta.description || "").trim();
+      var metaAuthor = (meta.author || "").trim();
+      var metaTitle = (meta.title || "").trim();
+      var metaImg = (meta.imageUrl || "").trim();
+
+      var hasBody =
+        truncated.trim().length >= 28 ||
+        metaDesc.length >= 10 ||
+        (meta.bundleText && String(meta.bundleText).trim().length >= 20);
+
       var igInfo = wizardInstagramPostInfo(pageUrl);
       var isIg = !!igInfo;
       var isReel = isIg && igInfo.kind === "reel";
+
+      var metaBlock = "";
+      if (metaAuthor || metaTitle || metaDesc || metaImg) {
+        metaBlock =
+          "\n\n---\nبيانات معاينة الرابط (Microlink — الأهم لإنستغرام):\n" +
+          (metaAuthor ? "حساب المنشور: " + metaAuthor + "\n" : "") +
+          (metaTitle ? "عنوان الصفحة: " + metaTitle + "\n" : "") +
+          (metaDesc
+            ? "نص وصف المنشور من صاحب الحساب (استخدمه كاملاً كنص أصلي إن لم يظهر في المحتوى أعلاه):\n" +
+              metaDesc +
+              "\n"
+            : "") +
+          (metaImg ? "رابط صورة المنشور (للعرض وللنسخ في المخرجات): " + metaImg + "\n" : "");
+      }
+
       var userPart =
         "الرابط:\n" +
         pageUrl +
-        "\n\n---\n\nمحتوى الصفحة المستخرج آلياً:\n\n" +
-        (truncated.trim() ||
-          "(لا يوجد نص مستخرج بعد — لا يمكن استخلاص الخبر بدقة.)") +
-        (isReel
-          ? "\n\n(تنبيه: الرابط بصيغة ريل — المطلوب نص الخبر من وصف صاحب الحساب فقط إن وُجد، دون تفاصيل بث.)"
-          : "");
+        "\n\n---\n\nمحتوى مُجلب آلياً من الصفحة (قد يشمل عناصر واجهة؛ تجاهل التعليقات أسفل المنشور):\n\n" +
+        (truncated.trim() || "(قليل أو فارغ — اعتمد على قسم معاينة الرابط أدناه إن وُجد.)") +
+        metaBlock +
+        (isReel ? "\n\n(رابط ريل — استخدم نص الوصف من الحقول أعلاه كنص خبر.)" : "");
 
       var systemFull =
-        "أنت مساعد تحرير أخبار بالعربية. الغاية: خبر من «منشور» واحد (صورة + نص صاحب الحساب/الموقع).\n" +
-        "استبعد بالكامل: تعليقات المتابعين، الردود، وذكر الريل كبث فيديو. إن وُجد في النص وصف خبر فهو المخرج، لا تعليقات تحته.\n" +
-        "رتّب المخرجات:\n" +
-        "• عنوان الخبر\n• المصدر أو اسم الموقع / الحساب\n• التاريخ إن وُجد\n• ملخص موجز (حتى 3 جمل)\n" +
-        "• نص الخبر كاملاً من نطاق المنشور/المقال فقط\n" +
-        "• وصف الصورة أو نص بديل (alt) إن ورد\n\n" +
-        "التزم بالنص المُعطى؛ لا تخترع.\n" +
-        (isIg
-          ? "\nإنستغرام: إن كان النص المُعطى واجهة عامة بلا وصف خبر، اذكر ذلك دون النيل من صحة الرابط."
-          : "");
+        "أنت محرر أخبار. أخرج النتيجة بالضبط بهذا الترتيب والعناوين العربية التالية (كل قسم يبدأ بعنوان ثم سطر جديد ثم المحتوى):\n\n" +
+        "مصدر الخبر:\n" +
+        "سطر واحد أو سطران، مثل: إنستغرام — ثم اسم أو handle الحساب إن عرفته من البيانات.\n\n" +
+        "النص الأصلي من المنشور:\n" +
+        "انسخ كامل نص تعليق صاحب الحساب / وصف المنشور باللغة الأصلية كما في المصدر (من حقل وصف المنشور أو النص المعطى). لا تدرج تعليقات متابعين آخرين. لا تلخص باختصار مفرط؛ احتفظ بالاقتباسات والإيموزي إن كانت جزءاً من المنشور.\n\n" +
+        "الترجمة إلى العربية:\n" +
+        "ترجمة كاملة واحترافية للفقرة السابقة إلى العربية (إعلامية واضحة).\n\n" +
+        "رابط صورة المنشور:\n" +
+        "ضع الرابط الكامل إن وُجد في البيانات؛ أو اكتب: غير متاح.\n\n" +
+        "قواعد صارمة:\n" +
+        "- لا تكتب «لا يوجد محتوى خبري» أو «لا يوجد» إذا وُجد أي نص في «نص وصف المنشور» أو في المحتوى المُجلب.\n" +
+        "- إذا كان المصدر إنستغرام والوصف موجوداً في بيانات معاينة الرابط، فذلك هو النص الأصلي للمنشور.\n" +
+        "- لا تخترع اقتباسات غير موجودة في النص المعطى.";
 
       var systemEmptyIg =
-        "أنت مساعد بالعربية. الرابط من إنستغرام ولم يُجلب وصف خبر المنشور آلياً.\n" +
-        "هذا لا يعني أن الرابط معطوباً. اقترح نسخ نص المنشور من صاحب الحساب (وصف الصورة) من التطبيق ولصقه في خطوة الترجمة — لا تعليقات الآخرين. يُفضّل لاحقاً رابط منشور /p/ للأخبار المصورة بدل الريل إن أراد المستخدم نصاً خبرياً أوضح.";
+        "الرابط إنستغرام ولم يُجرَ أي نص وصف منشور في الطلب.\n" +
+        "اقترح للمستخدم نسخ «نص المنشور» من التطبيق ولصقه يدوياً. لا تقل إن الرابط خطأ.";
       var systemEmptyGeneric =
-        "أنت مساعد تحرير أخبار بالعربية. النص المستخرج من الصفحة فارغ تقريباً.\n" +
-        "اكتب فقرة قصيرة توضح أن المحتوى لم يُجلب، واقترح لصق النص يدوياً أو تجربة رابط آخر. لا تخترع خبراً.";
+        "المحتوى المُجلب فارغ جداً ولا توجد معاونة من الرابط.\n" +
+        "اشرح ذلك باختصار واقترح لصق الرابط أو المحتوى يدوياً.";
 
       return fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -2343,8 +2459,8 @@
             },
             { role: "user", content: userPart }
           ],
-          temperature: 0.25,
-          max_tokens: 4096
+          temperature: 0.2,
+          max_tokens: 8192
         })
       }).then(function (res) {
         return res.json().then(function (data) {
@@ -2925,9 +3041,13 @@
           var lr = $("wizExtractLoading");
           var rw = $("wizExtractResultWrap");
           var ta = $("wizExtractResult");
+          var iw = $("wizExtractImageWrap");
+          var im = $("wizExtractImage");
           if (lr) lr.hidden = true;
           if (rw) rw.hidden = true;
           if (ta) ta.value = "";
+          if (iw) iw.hidden = true;
+          if (im) im.removeAttribute("src");
         }
       }
 
@@ -3207,32 +3327,69 @@
           }, 180000);
 
           var rawBackup = "";
+          var mmMeta = { description: "", title: "", author: "", imageUrl: "", bundleText: "" };
           /** هل تم استخدام مسار Responses + البحث في الويب لأن الجلب المحلي كان ضعيفاً */
           var usedWebSearch = false;
           var RAW_ENOUGH = 300;
 
-          wizardFetchRawPageBestEffort(u, ac.signal)
-            .then(function (raw) {
-              rawBackup = raw || "";
-              /** نص كافٍ بعد الجلب المدمج (جينا، بروكسيات، Microlink، X…) → تنسيق مباشر. وإلا → بحث ويب OpenAI بما فيه إنستغرام عند الحاجة. */
-              if (rawBackup.length >= RAW_ENOUGH) {
+          Promise.all([
+            wizardFetchRawPageBestEffort(u, ac.signal),
+            wizardFetchMicrolinkMeta(u)
+          ])
+            .then(function (pair) {
+              rawBackup = pair[0] || "";
+              mmMeta = pair[1] || mmMeta;
+              var metaRich =
+                (mmMeta.description && mmMeta.description.length >= 35) ||
+                (mmMeta.bundleText && mmMeta.bundleText.length >= 80);
+              var enoughRaw = rawBackup.length >= RAW_ENOUGH || rawBackup.length >= 120;
+              /** وصف Microlink غالباً يحوي نص المنشور كاملاً لإنستغرام — يكفي لتجاوز بحث الويب */
+              if (enoughRaw || metaRich) {
                 usedWebSearch = false;
-                return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
+                return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal, mmMeta);
               }
               usedWebSearch = true;
-              return wizardOpenAIExtractViaWebSearch(secret, u, rawBackup, ac.signal).catch(function (wsErr) {
-                usedWebSearch = false;
-                if (rawBackup.length > 0) {
-                  return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal);
+              return wizardOpenAIExtractViaWebSearch(secret, u, rawBackup, ac.signal, mmMeta).catch(
+                function (wsErr) {
+                  usedWebSearch = false;
+                  if (
+                    rawBackup.length > 0 ||
+                    (mmMeta.description && mmMeta.description.length > 0) ||
+                    (mmMeta.bundleText && mmMeta.bundleText.length > 0)
+                  ) {
+                    return wizardOpenAIExtractArticle(secret, u, rawBackup, ac.signal, mmMeta);
+                  }
+                  throw wsErr;
                 }
-                throw wsErr;
-              });
+              );
             })
             .then(function (finalText) {
               var out = String(finalText || "").trim();
               if (!out) throw new Error("empty");
               if (resultTa) resultTa.value = out;
               if (resultWrap) resultWrap.hidden = false;
+              var iw = $("wizExtractImageWrap");
+              var im = $("wizExtractImage");
+              if (iw && im) {
+                if (mmMeta.imageUrl) {
+                  im.alt = "صورة المنشور";
+                  im.removeAttribute("width");
+                  im.removeAttribute("height");
+                  im.referrerPolicy = "no-referrer";
+                  im.onerror = function () {
+                    iw.hidden = true;
+                    im.removeAttribute("src");
+                  };
+                  im.onload = function () {
+                    im.onerror = null;
+                  };
+                  im.src = mmMeta.imageUrl;
+                  iw.hidden = false;
+                } else {
+                  iw.hidden = true;
+                  im.removeAttribute("src");
+                }
+              }
               fbExtractLink.textContent = usedWebSearch
                 ? "تم استخراج الخبر عبر OpenAI مع الوصول إلى الويب. راجع النتيجة (نص المنشور/المقال فقط دون تعليقات متابعين)."
                 : (function () {
