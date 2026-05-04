@@ -6,7 +6,7 @@
   <title>90+ | منصة كرة القدم</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Bebas+Neue&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
   <style>
     /* ===== شاشة تسجيل الدخول ===== */
     .login-screen {
@@ -1985,7 +1985,7 @@
                   </a>
                 </div>
                 <div class="wiz-post-canvas-wrap">
-                  <canvas id="wizPostCanvas" width="1080" height="1920"></canvas>
+                  <canvas id="wizPostCanvas" width="1080" height="1350"></canvas>
                 </div>
                 <p class="wiz-extract-feedback" id="wizPostCanvasFeedback" role="status"></p>
               </div>
@@ -2467,7 +2467,7 @@
     }
 
     function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
-      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, sans-serif";
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
       var words = String(text || "")
         .replace(/\s+/g, " ")
         .trim()
@@ -2488,18 +2488,52 @@
       return lines.length ? lines : [""];
     }
 
+    /** مستطيل سفلي بحواف علوية مستديرة فقط (لوحة نص البوست) */
+    function roundRectTopCorners(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2);
+      ctx.beginPath();
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h);
+      ctx.closePath();
+    }
+
+    /** إطار ذهبي للوحة: الجانبان والأعلى فقط (بدون خط عند حافة الصورة السفلى) */
+    function strokePanelSidesAndTop(ctx, W, H, panelTop, cornerR) {
+      var r = Math.min(cornerR, W / 2);
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      ctx.lineTo(0, panelTop + r);
+      ctx.quadraticCurveTo(0, panelTop, r, panelTop);
+      ctx.lineTo(W - r, panelTop);
+      ctx.quadraticCurveTo(W, panelTop, W, panelTop + r);
+      ctx.lineTo(W, H);
+      ctx.stroke();
+    }
+
     /**
-     * توليد صورة بوست عمودية (ستوري) بأسلوب 90+ المرجعي.
+     * توليد صورة بوست إنستغرام ١٠٨٠×١٣٥٠ (نسبة ٤:٥) بأسلوب ٩٠+ المرجعي.
      */
     function composePostStoryImage(canvas, bgImg, overlayTplImg, headlineAr) {
       var W = 1080;
-      var H = 1920;
+      var H = 1350;
       canvas.width = W;
       canvas.height = H;
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#070708";
       ctx.fillRect(0, 0, W, H);
       drawImageCover(ctx, bgImg, W, H);
+
+      var fadeTop = Math.round(H * 0.48);
+      var fadeGrad = ctx.createLinearGradient(0, fadeTop, 0, H);
+      fadeGrad.addColorStop(0, "rgba(0,0,0,0)");
+      fadeGrad.addColorStop(0.55, "rgba(0,0,0,0.18)");
+      fadeGrad.addColorStop(1, "rgba(0,0,0,0.38)");
+      ctx.fillStyle = fadeGrad;
+      ctx.fillRect(0, fadeTop, W, H - fadeTop);
 
       var transparentTpl =
         overlayTplImg &&
@@ -2511,66 +2545,73 @@
         ctx.drawImage(overlayTplImg, 0, 0, W, H);
       }
 
-      var panelTop = H * 0.56;
-      var cornerR = 32;
+      var panelRatio = 0.375;
+      var panelHeight = Math.round(H * panelRatio);
+      var panelTop = H - panelHeight;
+      var cornerR = 44;
+      var padX = 72;
+      var maxTW = W - padX * 2;
+
+      var badgeW = 420;
+      var badgeH = 52;
+      var bx = (W - badgeW) / 2;
+      var by = panelTop - badgeH / 2;
 
       if (!transparentTpl || !overlayTplImg) {
-        ctx.fillStyle = "rgba(10, 10, 14, 0.88)";
-        ctx.beginPath();
-        ctx.moveTo(0, H);
-        ctx.lineTo(0, panelTop + cornerR);
-        ctx.quadraticCurveTo(0, panelTop, cornerR, panelTop);
-        ctx.lineTo(W - cornerR, panelTop);
-        ctx.quadraticCurveTo(W, panelTop, W, panelTop + cornerR);
-        ctx.lineTo(W, H);
-        ctx.closePath();
+        roundRectTopCorners(ctx, 0, panelTop, W, panelHeight, cornerR);
+        ctx.fillStyle = "rgba(18, 18, 18, 0.9)";
         ctx.fill();
         ctx.strokeStyle = "#e6bc3a";
-        ctx.lineWidth = 5;
-        ctx.stroke();
+        ctx.lineWidth = 2;
+        strokePanelSidesAndTop(ctx, W, H, panelTop, cornerR);
 
-        var badgeW = 440;
-        var badgeH = 58;
-        var bx = (W - badgeW) / 2;
-        var by = panelTop - badgeH - 28;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+        ctx.fillStyle = "rgba(18, 18, 18, 0.95)";
         roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
         ctx.fill();
         ctx.strokeStyle = "#e6bc3a";
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
         roundRectPath(ctx, bx, by, badgeW, badgeH, badgeH / 2);
         ctx.stroke();
         ctx.fillStyle = "#ffffff";
-        ctx.font = "600 26px Cairo, Tajawal, sans-serif";
+        ctx.font = "600 24px Cairo, Tajawal, Almarai, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        ctx.shadowBlur = 0;
         ctx.fillText("# ninety plus", bx + badgeW / 2, by + badgeH / 2);
 
+        var logoInset = 54;
+        var logoY = logoInset + 26;
         ctx.textAlign = "left";
-        ctx.shadowColor = "rgba(0,0,0,0.65)";
-        ctx.shadowBlur = 12;
+        ctx.textBaseline = "middle";
+        ctx.font = "700 52px Bebas Neue, Cairo, sans-serif";
         ctx.fillStyle = "#ffffff";
-        ctx.font = "700 56px Bebas Neue, Cairo, sans-serif";
-        ctx.fillText("+90", 42, 78);
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 8;
+        ctx.fillText("90", logoInset, logoY);
+        var w90 = ctx.measureText("90").width;
+        ctx.fillStyle = "#ffc300";
+        ctx.fillText("+", logoInset + w90, logoY);
         ctx.shadowBlur = 0;
       }
 
-      var padX = 56;
-      var maxTW = W - padX * 2;
-      var fontPx = transparentTpl && overlayTplImg ? 34 : 38;
+      var fontPx = transparentTpl && overlayTplImg ? 44 : 50;
+      var lineGap = Math.round(fontPx * 1.55);
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
       var lines = wrapLinesArabic(ctx, headlineAr, maxTW, fontPx);
-      var lineGap = Math.round(fontPx * 1.28);
-      var blockH = lines.length * lineGap + 36;
-      var textBottom = H - 72;
-      var startY = Math.min(panelTop + 48, textBottom - blockH + lineGap);
+      var nLines = lines.length;
+      var contentTop = panelTop + 56;
+      var contentBottom = H - 52;
+      var contentMidY = (contentTop + contentBottom) / 2;
+      var startY = contentMidY - ((nLines - 1) * lineGap) / 2;
 
-      ctx.fillStyle = "#fefefe";
-      ctx.textAlign = "right";
-      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, sans-serif";
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = transparentTpl ? 6 : 4;
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "700 " + fontPx + "px Cairo, Tajawal, Almarai, sans-serif";
+      ctx.shadowColor = "rgba(0,0,0,0.35)";
+      ctx.shadowBlur = transparentTpl ? 5 : 3;
       for (var li = 0; li < lines.length; li++) {
-        ctx.fillText(lines[li], W - padX, startY + li * lineGap);
+        ctx.fillText(lines[li], W / 2, startY + li * lineGap);
       }
       ctx.shadowBlur = 0;
       return true;
@@ -2580,7 +2621,7 @@
     function createPlaceholderBgImage() {
       return new Promise(function (resolve) {
         var W = 1080;
-        var H = 1920;
+        var H = 1350;
         var c = document.createElement("canvas");
         c.width = W;
         c.height = H;
