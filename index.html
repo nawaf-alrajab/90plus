@@ -2475,7 +2475,7 @@
 
     function wrapLinesArabic(ctx, text, maxWidth, fontPx) {
       ctx.font = arabicFontSpec("700", fontPx);
-      var safeW = Math.max(80, maxWidth * 0.97);
+      var safeW = Math.max(80, maxWidth * 0.96);
       var words = String(text || "")
         .replace(/\s+/g, " ")
         .trim()
@@ -2494,6 +2494,55 @@
       }
       if (cur) lines.push(cur);
       return expandOverwideLines(ctx, lines.length ? lines : [""], safeW);
+    }
+
+    /** تجهيز النص: أسطر من OpenAI، أو تقسيم الجمل الطويلة عند علامات الترقيم العربية */
+    function preprocessHeadlineForLayout(text) {
+      var t = String(text || "")
+        .trim()
+        .replace(/\r\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n");
+      if (t.indexOf("\n") >= 0) return t;
+      if (t.length > 55) {
+        t = t.replace(/([،؛؟!.])\s+/g, "$1\n");
+      }
+      return t;
+    }
+
+    /** لفّ كل مقطع (سطر من OpenAI) ثم دمج الأسطر — لمظهر قنوات احترافية */
+    function wrapHeadlineForPost(ctx, text, maxW, fontPx) {
+      var raw = preprocessHeadlineForLayout(text);
+      var chunks = raw
+        .split("\n")
+        .map(function (s) {
+          return s.trim();
+        })
+        .filter(function (s) {
+          return s.length > 0;
+        });
+      if (!chunks.length) chunks = [String(text || "").trim() || " "];
+      var all = [];
+      for (var ci = 0; ci < chunks.length; ci++) {
+        var sub = wrapLinesArabic(ctx, chunks[ci], maxW, fontPx);
+        for (var si = 0; si < sub.length; si++) all.push(sub[si]);
+      }
+      return all.length ? all : [""];
+    }
+
+    /** ارتفاع بصري لكتلة أسطر مع textBaseline: middle */
+    function measureTextBlockHeight(ctx, lines, fontPx, lineGap) {
+      if (!lines || !lines.length) return lineGap;
+      ctx.font = arabicFontSpec("700", fontPx);
+      var m0 = ctx.measureText(lines[0] || " ");
+      var mL = ctx.measureText(lines[lines.length - 1] || " ");
+      var asc =
+        typeof m0.actualBoundingBoxAscent === "number" ? m0.actualBoundingBoxAscent : fontPx * 0.58;
+      var desc =
+        typeof mL.actualBoundingBoxDescent === "number"
+          ? mL.actualBoundingBoxDescent
+          : fontPx * 0.3;
+      if (lines.length === 1) return asc + desc;
+      return asc + (lines.length - 1) * lineGap + desc;
     }
 
     /** تقسيم أي سطر أعرض من الحدّ إلى عدة أسطر (كلمات طويلة دون مسافات) */
@@ -2599,30 +2648,31 @@
     }
 
     /**
-     * أكبر حجم خط يبقي النص بالكامل داخل منطقة آمنة بعيداً عن الخطوط الصفراء والشارة، مع توسيط عمودي.
+     * أكبر حجم خط يبقي النص داخل المستطيل بعيداً عن الخطوط الصفراء، بهوامش علوية وسفلية متناسقة.
      */
     function fitArabicHeadlineInYellowBox(ctx, rawText, W, H, panelTop, badgeH) {
-      var innerPadX = 98;
-      var maxW = Math.max(120, W - 2 * innerPadX - 16);
-      var badgeBottom = panelTop + Math.ceil(badgeH * 0.5);
-      var textTop = Math.round(badgeBottom + 34);
-      var textBottom = H - 78;
+      var innerPadX = 100;
+      var maxW = Math.max(120, W - 2 * innerPadX - 20);
+      var badgeBottom = panelTop + badgeH * 0.5;
+      var padUnderBadge = 62;
+      var padBottom = 96;
+      var textTop = Math.round(badgeBottom + padUnderBadge);
+      var textBottom = H - padBottom;
       var maxH = textBottom - textTop;
-      if (maxH < 80) maxH = 80;
+      if (maxH < 100) maxH = 100;
       var text = String(rawText || "").trim();
       if (!text) text = " ";
       var minPx = 20;
-      var maxPx = 52;
+      var maxPx = 54;
       var chosen = null;
       for (var s = maxPx; s >= minPx; s--) {
         ctx.font = arabicFontSpec("700", s);
-        var lines = wrapLinesArabic(ctx, text, maxW, s);
-        var gap = Math.round(s * 1.5);
-        var glyphSlack = Math.ceil(s * 0.62);
-        var blockH = lines.length * gap + glyphSlack;
+        var lines = wrapHeadlineForPost(ctx, text, maxW, s);
+        var gap = Math.round(s * 1.58);
+        var blockH = measureTextBlockHeight(ctx, lines, s, gap);
         if (blockH > maxH) continue;
         var ok = true;
-        var wCap = maxW * 0.99;
+        var wCap = maxW * 0.98;
         for (var li = 0; li < lines.length; li++) {
           if (ctx.measureText(lines[li]).width > wCap) {
             ok = false;
@@ -2630,31 +2680,31 @@
           }
         }
         if (!ok) continue;
-        chosen = { fontPx: s, lines: lines, lineGap: gap, glyphSlack: glyphSlack };
+        chosen = { fontPx: s, lines: lines, lineGap: gap, blockH: blockH };
         break;
       }
       if (!chosen) {
         ctx.font = arabicFontSpec("700", minPx);
-        var linesMin = wrapLinesArabic(ctx, text, maxW, minPx);
-        var gapMin = Math.round(minPx * 1.5);
+        var linesMin = wrapHeadlineForPost(ctx, text, maxW, minPx);
+        var gapMin = Math.round(minPx * 1.58);
         chosen = {
           fontPx: minPx,
           lines: linesMin,
           lineGap: gapMin,
-          glyphSlack: Math.ceil(minPx * 0.62)
+          blockH: measureTextBlockHeight(ctx, linesMin, minPx, gapMin)
         };
       }
       var n = chosen.lines.length;
-      var midY = (textTop + textBottom) / 2;
       var gap = chosen.lineGap;
-      var gs = chosen.glyphSlack;
-      var minStart = textTop + gs / 2;
-      var maxStart = textBottom - (n - 1) * gap - gs / 2;
-      if (minStart > maxStart) maxStart = minStart;
-      var idealStart = midY - ((n - 1) * gap) / 2;
-      var startY = idealStart;
-      if (startY < minStart) startY = minStart;
-      if (startY > maxStart) startY = maxStart;
+      var midY = (textTop + textBottom) / 2;
+      var fp = chosen.fontPx;
+      var topLim = textTop + fp * 0.58;
+      var botLim = textBottom - fp * 0.58;
+      var ideal = midY - ((n - 1) * gap) / 2;
+      var low = topLim;
+      var high = botLim - (n - 1) * gap;
+      var startY =
+        low > high ? (textTop + textBottom - (n - 1) * gap) / 2 : Math.min(high, Math.max(low, ideal));
       return {
         fontPx: chosen.fontPx,
         lines: chosen.lines,
@@ -2824,7 +2874,7 @@
 
     function wizardOpenAIComposePostHeadline(secret, articleArabicText, signal) {
       var sys =
-        "أنت كاتب إعلانات رياضية عربية لمستوى عالمي. أخرج فقرة واحدة لبوست إنستغرام داخل لوحة نص ضيقة بعرض ثابت: اجعل الجمل قصيرة وتجنّب جملة واحدة طويلة جداً (يفضّل أقل من ٤٠ حرفاً لكل عبارة قبل الفاصلة أو النقطة). استخدم فاصلة أو واو للفصل بين الفقرات القصيرة. بلغة واضحة وقوية، بدون هاشتاغ، بدون عنوان منفصل، بدون «إليك الخبر» أو «في الخبر». اعتمد النص المصدر فقط. الهدف أن يُلفّ النص تلقائياً دون أن يلامس حواف إطار ذهبي — فالإيجاز يساعد على ذلك.";
+        "أنت كاتب شاشة رياضية لمستوى قنوات عالمية (أسلوب إيجاز احترافي). أخرج نص البوست فقط: من ٢ إلى ٤ أسطر قصيرة، وكل سطر يجب أن يكون في سطر مستقل باستخدام فاصل أسطر (سطر جديد) بين الأسطر، دون ترقيم في البداية. كل سطر يفضّل ألا يتجاوز ٣٨ حرفاً تقريباً. لغة عربية فصحى سهلة وصوت مؤكد، بدون هاشتاغ وبدون عنوان وبدون «إليك الخبر». إن كان المصدر قصيراً اجعل سطرين فقط؛ إن كان طويلاً وزّع على ٣ أو ٤ أسطر متوازنة الطول. الهدف مقروءية عالية داخل إطار ذهبي على الشاشة.";
       var usr = "النص:\n" + String(articleArabicText || "").trim().slice(0, 12000);
       var reqInit = {
         method: "POST",
@@ -2853,6 +2903,7 @@
           }
           var ch = data.choices && data.choices[0] && data.choices[0].message;
           var txt = ch && ch.content ? String(ch.content).trim() : "";
+          txt = txt.replace(/^```[a-zA-Z]*\s*/m, "").replace(/\s*```$/m, "").trim();
           return txt || String(articleArabicText || "").trim();
         });
       });
